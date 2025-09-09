@@ -1,3 +1,4 @@
+import apiHost from '../../config/apiHost';
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -163,11 +164,10 @@ export default function Login() {
     
     // Login via API
     let url = "";
-    const apiHost = window.location.hostname;
     if (perfil === "paciente") {
-      url = `http://${apiHost}:4000/login`;
+      url = `https://${apiHost}/login`;
     } else if (perfil === "profissional") {
-      url = `http://${apiHost}:4000/login-profissional`;
+      url = `https://${apiHost}/login-profissional`;
     }
     
     fetch(url, {
