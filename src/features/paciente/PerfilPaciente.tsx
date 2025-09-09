@@ -1,3 +1,4 @@
+import apiHost from '../../config/apiHost';
 import React, { useState } from "react";
 
 export default function PerfilPaciente({ paciente, setPaciente }: { paciente: any, setPaciente: (p: any) => void }) {
@@ -9,7 +10,7 @@ export default function PerfilPaciente({ paciente, setPaciente }: { paciente: an
 
   async function handleSave() {
     try {
-      const response = await fetch(`http://localhost:4000/pacientes/${paciente.id}`, {
+  const response = await fetch(`https://${apiHost}/pacientes/${paciente.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, telefone, endereco, foto_perfil: fotoPerfil })

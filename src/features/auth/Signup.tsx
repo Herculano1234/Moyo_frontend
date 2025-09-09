@@ -1,3 +1,4 @@
+import apiHost from '../../config/apiHost';
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
@@ -34,7 +35,7 @@ export default function Signup() {
     if (perfil === "profissional" && (!unidade || !municipio || !area || !cargo)) return setError("Preencha todos os campos do profissional.");
 
     try {
-      let url = "http://localhost:4000/pacientes";
+  let url = `https://${apiHost}/pacientes`;
       let body: any = {
         nome,
         email,
@@ -46,7 +47,7 @@ export default function Signup() {
         foto_perfil: fotoPerfil,
       };
       if (perfil === "profissional") {
-        url = "http://localhost:4000/profissionais";
+  url = `https://${apiHost}/profissionais`;
         body = {
           nome,
           data_nascimento: dataNascimento,
