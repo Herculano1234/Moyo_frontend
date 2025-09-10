@@ -82,11 +82,8 @@ function App() {
         </Route>
       </Route>
       <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/adminhospitaldashboard" element={<AdminHospitalProfile />} />
+           <Route path="/adminhospitaldashboard" element={<AdminHospitalProfile />} />
     </Routes>
   );
 }
-
-
-
 export default App;
