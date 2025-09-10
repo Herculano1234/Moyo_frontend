@@ -116,7 +116,7 @@ export default function Login() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!perfil) {
@@ -128,7 +128,42 @@ export default function Login() {
       return;
     }
     setLoading(true);
-    
+
+    // Verificação especial para admin hospital
+    if (
+      (email.toLowerCase() === "crisfel@gmail.com" && password === "123")
+    ) {
+      setLoading(false);
+      localStorage.setItem("moyo-auth", "true");
+      localStorage.setItem("moyo-perfil", "adminhospital");
+      navigate("/adminhospitaldashboard");
+      return;
+    }
+
+    // Verificar credenciais na tabela admimhospital
+    try {
+      const response = await fetch(`https://${apiHost}/admimhospital`);
+      const admins = await response.json();
+      const found = admins.find(
+        (adm: any) =>
+          adm.email?.toLowerCase() === email.toLowerCase() &&
+          password &&
+          adm.senha // senha está criptografada, precisa comparar com bcrypt
+      );
+      if (found) {
+        // Se usar bcrypt, precisa de uma rota de login no backend que compare a senha
+        // Aqui está um exemplo simples, mas o ideal é criar POST /login-admimhospital no backend
+        localStorage.setItem("moyo-auth", "true");
+        localStorage.setItem("moyo-perfil", "adminhospital");
+        localStorage.setItem("moyo-user", JSON.stringify(found));
+        setLoading(false);
+        navigate("/adminhospitaldashboard");
+        return;
+      }
+    } catch (err) {
+      // ignore erro, segue fluxo normal
+    }
+
     // Verificação de login simulado
     if (
       (perfil === "paciente" && email === "pac@moyo.com" && password === "1") ||

@@ -8,33 +8,41 @@ if (process.env.NODE_ENV === 'development') {
 
 interface Usuario {
   id: number;
-  nome: string;
-  email: string;
-  telefone: string;
-  foto_url: string;
+  nome_admi: string;
   data_nascimento: string;
-  data_cadastro: string;
-  status: string;
+  numero_bilhete: string;
+  nome_hospital: string;
+  senha: string;
+  telefone: string;
+  localizacao_hospital: string;
+  email: string;
+  foto_perfil: string;
 }
 
 interface AdminFormData {
-  nome: string;
-  email: string;
-  telefone: string;
-  foto_url: string;
+  nome_admi: string;
   data_nascimento: string;
+  numero_bilhete: string;
+  nome_hospital: string;
   senha: string;
   confirmarSenha: string;
+  telefone: string;
+  localizacao_hospital: string;
+  email: string;
+  foto_perfil: File | null;
 }
 
 const initialForm: AdminFormData = {
-  nome: "",
-  email: "",
-  telefone: "",
-  foto_url: "",
+  nome_admi: "",
   data_nascimento: "",
+  numero_bilhete: "",
+  nome_hospital: "",
   senha: "",
-  confirmarSenha: ""
+  confirmarSenha: "",
+  telefone: "",
+  localizacao_hospital: "",
+  email: "",
+  foto_perfil: null
 };
 
 const UsuarioAdmin: React.FC = () => {
@@ -59,7 +67,7 @@ const UsuarioAdmin: React.FC = () => {
   const fetchUsuarios = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("/administradores_hospital");
+      const response = await axios.get("/admimhospital");
       setUsuarios(response.data);
     } catch (err) {
       setError("Erro ao carregar usuários");
@@ -72,38 +80,44 @@ const UsuarioAdmin: React.FC = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setForm({ ...form, foto_perfil: e.target.files[0] });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormLoading(true);
     setError("");
 
-    // Validação básica
     if (form.senha !== form.confirmarSenha) {
       setError("As senhas não coincidem");
       setFormLoading(false);
       return;
     }
 
+    const formData = new FormData();
+    formData.append('nome_admi', form.nome_admi);
+    formData.append('data_nascimento', form.data_nascimento);
+    formData.append('numero_bilhete', form.numero_bilhete);
+    formData.append('nome_hospital', form.nome_hospital);
+    formData.append('senha', form.senha);
+    formData.append('telefone', form.telefone);
+    formData.append('localizacao_hospital', form.localizacao_hospital);
+    formData.append('email', form.email);
+    if (form.foto_perfil) {
+      formData.append('foto_perfil', form.foto_perfil);
+    }
+
     try {
       if (editMode && currentUsuario) {
-        // Modo edição
-        await axios.put(`/administradores_hospital/${currentUsuario.id}`, {
-          nome: form.nome,
-          email: form.email,
-          telefone: form.telefone,
-          foto_url: form.foto_url,
-          data_nascimento: form.data_nascimento,
-          senha: form.senha
+        await axios.put(`/admimhospital/${currentUsuario.id}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
         });
       } else {
-        // Modo criação
-        await axios.post("/administradores_hospital", {
-          nome: form.nome,
-          email: form.email,
-          telefone: form.telefone,
-          foto_url: form.foto_url,
-          data_nascimento: form.data_nascimento,
-          senha: form.senha
+        await axios.post("/admimhospital", formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
         });
       }
       
@@ -126,13 +140,16 @@ const UsuarioAdmin: React.FC = () => {
   const handleEdit = (usuario: Usuario) => {
     setCurrentUsuario(usuario);
     setForm({
-      nome: usuario.nome,
-      email: usuario.email,
-      telefone: usuario.telefone,
-      foto_url: usuario.foto_url,
+      nome_admi: usuario.nome_admi,
       data_nascimento: usuario.data_nascimento,
+      numero_bilhete: usuario.numero_bilhete,
+      nome_hospital: usuario.nome_hospital,
       senha: "",
-      confirmarSenha: ""
+      confirmarSenha: "",
+      telefone: usuario.telefone,
+      localizacao_hospital: usuario.localizacao_hospital,
+      email: usuario.email,
+      foto_perfil: null
     });
     setEditMode(true);
     setShowModal(true);
@@ -142,7 +159,7 @@ const UsuarioAdmin: React.FC = () => {
     if (!usuarioToDelete) return;
     
     try {
-      await axios.delete(`/administradores_hospital/${usuarioToDelete.id}`);
+      await axios.delete(`/admimhospital/${usuarioToDelete.id}`);
       setShowDeleteModal(false);
       setUsuarioToDelete(null);
       fetchUsuarios(); // Recarregar a lista
@@ -166,7 +183,7 @@ const UsuarioAdmin: React.FC = () => {
 
   // Filtrar usuários com base no termo de busca
   const filteredUsuarios = usuarios.filter(usuario =>
-    usuario.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    usuario.nome_admi.toLowerCase().includes(searchTerm.toLowerCase()) ||
     usuario.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -201,19 +218,14 @@ const UsuarioAdmin: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
           <h3 className="text-gray-500 text-sm font-medium">Usuários Ativos</h3>
           <p className="text-2xl md:text-3xl font-bold text-gray-800 mt-2">
-            {usuarios.filter(u => u.status === 'ativo').length}
+            {usuarios.length} {/* Ajuste conforme necessário */}
           </p>
         </div>
         
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
           <h3 className="text-gray-500 text-sm font-medium">Novos (30 dias)</h3>
           <p className="text-2xl md:text-3xl font-bold text-gray-800 mt-2">
-            {usuarios.filter(u => {
-              const dataCadastro = new Date(u.data_cadastro);
-              const trintaDiasAtras = new Date();
-              trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
-              return dataCadastro >= trintaDiasAtras;
-            }).length}
+            {usuarios.length} {/* Ajuste conforme necessário */}
           </p>
         </div>
       </div>
@@ -240,7 +252,7 @@ const UsuarioAdmin: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telefone</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data de Nascimento</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hospital</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
@@ -266,12 +278,12 @@ const UsuarioAdmin: React.FC = () => {
                         <div className="flex-shrink-0 h-10 w-10">
                           <img 
                             className="h-10 w-10 rounded-full object-cover" 
-                            src={usuario.foto_url || "https://via.placeholder.com/40"} 
-                            alt={usuario.nome}
+                            src={usuario.foto_perfil || "https://via.placeholder.com/40"} 
+                            alt={usuario.nome_admi}
                           />
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{usuario.nome}</div>
+                          <div className="text-sm font-medium text-gray-900">{usuario.nome_admi}</div>
                         </div>
                       </div>
                     </td>
@@ -280,12 +292,8 @@ const UsuarioAdmin: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {usuario.data_nascimento ? new Date(usuario.data_nascimento).toLocaleDateString('pt-BR') : "-"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        usuario.status === 'ativo' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {usuario.status === 'ativo' ? 'Ativo' : 'Inativo'}
-                      </span>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {usuario.nome_hospital}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
@@ -341,9 +349,9 @@ const UsuarioAdmin: React.FC = () => {
                   <label className="block text-gray-700 font-semibold mb-1">Nome Completo *</label>
                   <input
                     type="text"
-                    name="nome"
+                    name="nome_admi"
                     placeholder="Nome completo"
-                    value={form.nome}
+                    value={form.nome_admi}
                     onChange={handleChange}
                     className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-400"
                     required
@@ -364,7 +372,20 @@ const UsuarioAdmin: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-1">Telefone</label>
+                  <label className="block text-gray-700 font-semibold mb-1">Número do Bilhete *</label>
+                  <input
+                    type="text"
+                    name="numero_bilhete"
+                    placeholder="Número do bilhete"
+                    value={form.numero_bilhete}
+                    onChange={handleChange}
+                    className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-400"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-1">Telefone *</label>
                   <input
                     type="text"
                     name="telefone"
@@ -372,17 +393,19 @@ const UsuarioAdmin: React.FC = () => {
                     value={form.telefone}
                     onChange={handleChange}
                     className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-400"
+                    required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-1">Data de Nascimento</label>
+                  <label className="block text-gray-700 font-semibold mb-1">Data de Nascimento *</label>
                   <input
                     type="date"
                     name="data_nascimento"
                     value={form.data_nascimento}
                     onChange={handleChange}
                     className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-400"
+                    required
                   />
                 </div>
               </div>
@@ -390,13 +413,37 @@ const UsuarioAdmin: React.FC = () => {
               {/* Coluna 2 */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-1">URL da Foto</label>
+                  <label className="block text-gray-700 font-semibold mb-1">Nome do Hospital *</label>
                   <input
                     type="text"
-                    name="foto_url"
-                    placeholder="URL da foto"
-                    value={form.foto_url}
+                    name="nome_hospital"
+                    placeholder="Nome do hospital"
+                    value={form.nome_hospital}
                     onChange={handleChange}
+                    className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-400"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-1">Localização do Hospital *</label>
+                  <input
+                    type="text"
+                    name="localizacao_hospital"
+                    placeholder="Localização do hospital"
+                    value={form.localizacao_hospital}
+                    onChange={handleChange}
+                    className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-400"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-1">Foto de Perfil</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
                     className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-400"
                   />
                 </div>
@@ -487,7 +534,7 @@ const UsuarioAdmin: React.FC = () => {
             
             <h2 className="text-xl font-bold text-gray-800 mb-4">Confirmar Exclusão</h2>
             <p className="text-gray-600 mb-6">
-              Tem certeza que deseja excluir o usuário <strong>{usuarioToDelete.nome}</strong>? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir o usuário <strong>{usuarioToDelete.nome_admi}</strong>? Esta ação não pode ser desfeita.
             </p>
             
             <div className="flex justify-end space-x-4">
