@@ -4,11 +4,11 @@ import axios from 'axios';
 
 // Configurar baseURL do axios para backend local
 if (process.env.NODE_ENV === 'development') {
-  axios.defaults.baseURL = 'http://localhost:4000';
+  axios.defaults.baseURL = 'https://moyosaude-backend.vercel.app:4000';
 }
 
 // WebSocket para atualização em tempo real
-const WS_URL = 'http://localhost:4000'; // ajuste para sua URL real
+const WS_URL = 'https://moyosaude-backend.vercel.app:4000'; // ajuste para sua URL real
 
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';

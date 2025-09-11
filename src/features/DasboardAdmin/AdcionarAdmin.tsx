@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-const WS_URL = 'ws://localhost:3001';
+const WS_URL = 'https://moyosaude-backend.vercel.app:3001';
 const AdcionarAdmin: React.FC = () => {
   const [form, setForm] = useState({
     nome: "",

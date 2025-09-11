@@ -14,7 +14,6 @@ import Signup from "./features/auth/Signup";
 import { Routes, Route, useLocation, Navigate, Outlet } from "react-router-dom";
 import PacienteDashboard from "./features/paciente/PacienteDashboard";
 import AdminDashboard from "./features/DasboardAdmin/AdminDashboard";
-import AdminHospitalProfile from "./features/admimdasboardhospital/admimdashboardhosptal";
 
 function RequireAuth({ perfil }: { children?: React.ReactNode; perfil: string }) {
   const isAuth = localStorage.getItem("moyo-auth") === "true";
@@ -81,8 +80,6 @@ function App() {
           <Route index element={<PacienteDashboard />} />
         </Route>
       </Route>
-      <Route path="/admin" element={<AdminDashboard />} />
-           <Route path="/adminhospitaldashboard" element={<AdminHospitalProfile />} />
     </Routes>
   );
 }

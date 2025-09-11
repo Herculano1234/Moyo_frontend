@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 // WebSocket para atualização em tempo real
-const WS_URL = 'ws://localhost:3001'; // ajuste para sua URL real
+const WS_URL = 'https://moyosaude-backend.vercel.app:3001'; // ajuste para sua URL real
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
