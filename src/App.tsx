@@ -80,6 +80,7 @@ function App() {
           <Route index element={<PacienteDashboard />} />
         </Route>
       </Route>
+      <Route path="/admin" element={<AdminDashboard />} />
     </Routes>
   );
 }
