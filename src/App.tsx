@@ -14,7 +14,9 @@ import Signup from "./features/auth/Signup";
 import { Routes, Route, useLocation, Navigate, Outlet } from "react-router-dom";
 import PacienteDashboard from "./features/paciente/PacienteDashboard";
 import AdminDashboard from "./features/DasboardAdmin/AdminDashboard";
-import AdminHospitalProfile from "./features/admimdasboardhospital/admimdashboardhosptal";
+import AdminHospitalProfile from "./features/adminDashboardhospital/DashboardAdminHospital";
+import ProfissionaisAdmin from "./features/adminDashboardhospital/ProfissionaisAdmin";
+
 
 function RequireAuth({ perfil }: { children?: React.ReactNode; perfil: string }) {
   const isAuth = localStorage.getItem("moyo-auth") === "true";
@@ -65,7 +67,8 @@ function App() {
       <Route path="/" element={<RequireGuest><LandingPage /></RequireGuest>} />
       {/* Rotas do Profissional */}
       <Route element={<RequireAuth perfil="profissional" />}> 
-        <Route element={<ProfissionalLayout />}> 
+        <Route element={<ProfissionalLayout />}>
+         
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="dashboard/perfil" element={<PerfilProfissional />} />
           <Route path="pacientes" element={<Pacientes />} />
@@ -82,7 +85,9 @@ function App() {
         </Route>
       </Route>
       <Route path="/admin" element={<AdminDashboard />} />
-           <Route path="/adminhospitaldashboard" element={<AdminHospitalProfile />} />
+      <Route path="/adminhospitaldashboard" element={<AdminHospitalProfile />} />
+      <Route path="/ProfissionaisAdmin" element={<ProfissionaisAdmin />} />
+      <Route path="/admin/profissionais" element={<ProfissionaisAdmin />} />
     </Routes>
   );
 }
