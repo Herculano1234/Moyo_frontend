@@ -3,7 +3,7 @@ import axios from "axios";
 
 // Configurar baseURL do axios para backend local
 if (process.env.NODE_ENV === 'development') {
-  axios.defaults.baseURL = 'http://moyo-backend.vercel.app';
+  axios.defaults.baseURL = 'https://moyo-backend.vercel.app';
 }
 
 interface Usuario {
@@ -14,6 +14,8 @@ interface Usuario {
   telefone: string;
   email: string;
   foto_perfil: string;
+  hospital_id?: number;
+  hospital_nome?: string;
 }
 
 interface AdminFormData {
@@ -24,6 +26,7 @@ interface AdminFormData {
   telefone: string;
   email: string;
   foto_perfil: File | null;
+  hospital_id: string;
 }
 
 const initialForm: AdminFormData = {
@@ -33,13 +36,16 @@ const initialForm: AdminFormData = {
   confirmarSenha: "",
   telefone: "",
   email: "",
-  foto_perfil: null
+  foto_perfil: null,
+  hospital_id: ""
 };
 
 const UsuarioAdmin: React.FC = () => {
+  const [hospitais, setHospitais] = useState<{ id: number, nome: string }[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [userType, setUserType] = useState<string>("admin"); // Novo estado para tipo de usuário
   const [form, setForm] = useState<AdminFormData>(initialForm);
   const [formLoading, setFormLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -50,25 +56,54 @@ const UsuarioAdmin: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [usuarioToDelete, setUsuarioToDelete] = useState<Usuario | null>(null);
 
-  // Buscar usuários do backend
+  // Buscar usuários do backend conforme o tipo selecionado
   useEffect(() => {
-    fetchUsuarios();
-  }, []);
+    // Buscar hospitais para o select
+    axios.get('/hospitais').then(res => {
+      // Aceita nome ou name
+      setHospitais(res.data.map((h: any) => ({ id: h.id, nome: h.nome || h.name })));
+    });
+    fetchUsuarios(userType);
+  }, [userType]);
 
-  const fetchUsuarios = async () => {
+  const fetchUsuarios = async (tipo: string) => {
     try {
       setLoading(true);
-      const response = await axios.get("/administradores_hospital");
-      setUsuarios(response.data);
+      let endpoint = "";
+      if (tipo === "admin") {
+        endpoint = "/administradores_hospital";
+      } else if (tipo === "profissional") {
+        endpoint = "/profissionais";
+      } else if (tipo === "paciente") {
+        endpoint = "/pacientes";
+      } else {
+        // Buscar todos os tipos (concatena resultados)
+        const [admins, profissionais, pacientes] = await Promise.all([
+          axios.get("/administradores_hospital"),
+          axios.get("/profissionais"),
+          axios.get("/pacientes")
+        ]);
+        setUsuarios([
+          ...admins.data.map((u: any) => ({ ...u, tipo: "admin" })),
+          ...profissionais.data.map((u: any) => ({ ...u, tipo: "profissional" })),
+          ...pacientes.data.map((u: any) => ({ ...u, tipo: "paciente" }))
+        ]);
+        setLoading(false);
+        return;
+      }
+      const response = await axios.get(endpoint);
+      // Adiciona campo tipo para facilitar filtro
+      setUsuarios(response.data.map((u: any) => ({ ...u, tipo })));
     } catch (err) {
       setError("Erro ao carregar usuários");
+      setUsuarios([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,6 +129,7 @@ const UsuarioAdmin: React.FC = () => {
     formData.append('telefone', form.telefone);
     formData.append('email', form.email);
     formData.append('senha', form.senha);
+    formData.append('hospital_id', form.hospital_id);
     // O backend espera 'foto_url', não 'foto_perfil'
     if (form.foto_perfil) {
       formData.append('foto_url', form.foto_perfil);
@@ -111,8 +147,8 @@ const UsuarioAdmin: React.FC = () => {
       }
       
       setSuccess(true);
-      setForm(initialForm);
-      fetchUsuarios(); // Recarregar a lista
+  setForm(initialForm);
+  fetchUsuarios(userType); // Recarregar a lista
       
       setTimeout(() => {
         setShowModal(false);
@@ -135,7 +171,8 @@ const UsuarioAdmin: React.FC = () => {
       confirmarSenha: "",
       telefone: usuario.telefone,
       email: usuario.email,
-      foto_perfil: null
+      foto_perfil: null,
+      hospital_id: usuario.hospital_id ? String(usuario.hospital_id) : ""
     });
     setEditMode(true);
     setShowModal(true);
@@ -146,9 +183,9 @@ const UsuarioAdmin: React.FC = () => {
     
     try {
       await axios.delete(`/administradores_hospital/${usuarioToDelete.id}`);
-      setShowDeleteModal(false);
-      setUsuarioToDelete(null);
-      fetchUsuarios(); // Recarregar a lista
+  setShowDeleteModal(false);
+  setUsuarioToDelete(null);
+  fetchUsuarios(userType); // Recarregar a lista
     } catch (err: any) {
       setError(err.response?.data?.error || "Erro ao excluir usuário.");
     }
@@ -167,31 +204,44 @@ const UsuarioAdmin: React.FC = () => {
     setError("");
   };
 
-  // Filtrar usuários com base no termo de busca
-  const filteredUsuarios = usuarios.filter(usuario =>
-    (usuario.nome_admi?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-    (usuario.email?.toLowerCase() || "").includes(searchTerm.toLowerCase())
-  );
+  // Filtrar usuários com base no termo de busca e tipo de usuário
+  const filteredUsuarios = usuarios.filter(usuario => {
+    // Supondo que o backend retorna um campo 'tipo' para cada usuário
+    const tipo = (usuario as any).tipo || "admin";
+    const matchesType = userType === "todos" || tipo === userType;
+    const matchesSearch = (usuario.nome_admi?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (usuario.email?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+    return matchesType && matchesSearch;
+  });
 
   return (
     <div className="animate-fadeIn">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-0">Gestão de Usuários</h1>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 items-center">
           <button 
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center"
             onClick={() => setShowModal(true)}
           >
             <i className="fas fa-plus mr-2"></i> Novo Usuário
           </button>
-          
           <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center">
             <i className="fas fa-print mr-2"></i> Imprimir
           </button>
-          
           <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center">
             <i className="fas fa-download mr-2"></i> Exportar
           </button>
+          {/* Filtro de tipo de usuário */}
+          <select
+            className="ml-4 border rounded-lg px-3 py-2 text-gray-700 bg-white focus:ring-2 focus:ring-blue-400"
+            value={userType}
+            onChange={e => setUserType(e.target.value)}
+          >
+            <option value="todos">Todos</option>
+            <option value="admin">Admin Hospitalar</option>
+            <option value="profissional">Profissional</option>
+            <option value="paciente">Paciente</option>
+          </select>
         </div>
       </div>
 
@@ -218,15 +268,30 @@ const UsuarioAdmin: React.FC = () => {
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="p-6 border-b border-gray-200">
-          <div className="relative mb-4">
-            <input 
-              type="text" 
-              className="w-full p-3 pl-10 border border-gray-300 rounded-lg"
-              placeholder="Buscar usuários por nome ou email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <i className="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+          <div className="relative mb-4 flex flex-col md:flex-row md:items-center gap-4">
+            <div className="flex-1 relative">
+              <input 
+                type="text" 
+                className="w-full p-3 pl-10 border border-gray-300 rounded-lg"
+                placeholder="Buscar usuários por nome ou email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <i className="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+            </div>
+            {/* Filtro de tipo de usuário duplicado para melhor UX em telas menores */}
+            <div className="md:hidden">
+              <select
+                className="border rounded-lg px-3 py-2 text-gray-700 bg-white focus:ring-2 focus:ring-blue-400"
+                value={userType}
+                onChange={e => setUserType(e.target.value)}
+              >
+                <option value="todos">Todos</option>
+                <option value="admin">Admin Hospitalar</option>
+                <option value="profissional">Profissional</option>
+                <option value="paciente">Paciente</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -343,7 +408,6 @@ const UsuarioAdmin: React.FC = () => {
                     required
                   />
                 </div>
-                
                 <div>
                   <label className="block text-gray-700 font-semibold mb-1">Email *</label>
                   <input
@@ -356,9 +420,6 @@ const UsuarioAdmin: React.FC = () => {
                     required
                   />
                 </div>
-                
-                {/* Campo removido: Número do Bilhete */}
-                
                 <div>
                   <label className="block text-gray-700 font-semibold mb-1">Telefone *</label>
                   <input
@@ -371,7 +432,6 @@ const UsuarioAdmin: React.FC = () => {
                     required
                   />
                 </div>
-                
                 <div>
                   <label className="block text-gray-700 font-semibold mb-1">Data de Nascimento *</label>
                   <input
@@ -382,6 +442,21 @@ const UsuarioAdmin: React.FC = () => {
                     className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-400"
                     required
                   />
+                </div>
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-1">Hospital *</label>
+                  <select
+                    name="hospital_id"
+                    value={form.hospital_id}
+                    onChange={handleChange}
+                    className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-400"
+                    required
+                  >
+                    <option value="">Selecione o hospital</option>
+                    {hospitais.map(h => (
+                      <option key={h.id} value={h.id}>{h.nome}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               

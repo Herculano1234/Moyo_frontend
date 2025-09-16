@@ -19,7 +19,7 @@ const SidebarAdmin: React.FC<SidebarAdminProps> = ({ activeTab, setActiveTab }) 
   return (
     <aside className="w-64 bg-white dark:bg-gray-800 shadow-xl flex flex-col min-h-screen">
       <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center space-x-2">
-        <div className="flex items-center mb-8 animate-fadeIn">
+            <div className="flex items-center mb-8 animate-fadeIn">
               <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mr-3 shadow-lg">
                 <i className="fas fa-heartbeat text-2xl text-[#DC2626] pulsing"></i>
               </div>

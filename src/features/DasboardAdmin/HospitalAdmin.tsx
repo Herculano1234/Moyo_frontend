@@ -4,7 +4,7 @@ import axios from 'axios';
 
 // Configurar baseURL do axios para backend local
 if (process.env.NODE_ENV === 'development') {
-  axios.defaults.baseURL = 'https://moyosaude-backend.vercel.app:4000';
+  axios.defaults.baseURL = 'https://moyo-backend.vercel.app';
 }
 
 // ...existing code...

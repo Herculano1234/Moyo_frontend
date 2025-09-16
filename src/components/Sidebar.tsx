@@ -66,12 +66,12 @@ export default function Sidebar() {
       >
         {/* Logo */}
         <div className="p-4 flex items-center justify-between border-b dark:border-gray-700">
-          <div className="flex items-center space-x-2">
-            <div className="bg-moyo-primary w-8 h-8 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold">M</span>
+          <div className="flex items-center mb-8 animate-fadeIn">
+              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mr-3 shadow-lg">
+                <i className="fas fa-heartbeat text-2xl text-[#DC2626] pulsing"></i>
+              </div>
+              <span className="text-3xl font-extrabold">Moyo</span>
             </div>
-            <span className="text-xl font-bold text-moyo-primary hidden xl:block lg:hidden">Moyo</span>
-          </div>
           <button 
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white hidden lg:block xl:hidden"
             onClick={() => setIsOpen(false)}
