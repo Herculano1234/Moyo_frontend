@@ -33,7 +33,7 @@ export default function Pacientes() {
     fetchPacientes();
   }, []);
 
-  const pacientesFiltrados = pacientes.filter(p =>
+  const pacientesFiltrados = Array.isArray(pacientes) ? pacientes.filter((p: any) =>
     p.nome.toLowerCase().includes(busca.toLowerCase()) ||
     p.email.toLowerCase().includes(busca.toLowerCase())
   );
@@ -67,7 +67,7 @@ export default function Pacientes() {
             {pacientesFiltrados.length === 0 ? (
               <tr><td colSpan={5} className="text-center py-4 text-moyo-gray">Nenhum paciente encontrado.</td></tr>
             ) : (
-              pacientesFiltrados.map(p => (
+              pacientesFiltrados.map((p: any) => (
                 <tr key={p.id} className="border-b hover:bg-gray-50">
                   <td className="px-4 py-2 font-semibold">{p.nome}</td>
                   <td className="px-4 py-2">{p.email}</td>

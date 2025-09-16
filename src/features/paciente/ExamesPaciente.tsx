@@ -54,8 +54,8 @@ export default function ExamesPaciente() {
     saveExames(novos);
   };
 
-  const pendentes = exames.filter((e) => e.status === "pendente");
-  const historico = exames.filter((e) => e.status !== "pendente");
+  const pendentes = Array.isArray(exames) ? exames.filter((e) => e.status === "pendente") : [];
+  const historico = Array.isArray(exames) ? exames.filter((e) => e.status !== "pendente") : [];
 
   return (
     <div className="flex-1 w-full flex flex-col min-h-full p-4 ">

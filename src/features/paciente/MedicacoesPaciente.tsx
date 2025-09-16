@@ -52,8 +52,8 @@ export default function MedicacoesPaciente() {
     saveMedicacoes(novas);
   };
 
-  const atuais = medicacoes.filter(m => m.status === "atual");
-  const historico = medicacoes.filter(m => m.status !== "atual");
+  const atuais = Array.isArray(medicacoes) ? medicacoes.filter(m => m.status === "atual") : [];
+  const historico = Array.isArray(medicacoes) ? medicacoes.filter(m => m.status !== "atual") : [];
 
   return (
     <div className="flex-1 w-full flex flex-col min-h-full p-4">

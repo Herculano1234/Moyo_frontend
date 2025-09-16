@@ -50,8 +50,8 @@ export default function DashboardHomePaciente() {
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
 
   // Separar pendentes e histórico
-  const pendentes = consultas.filter(c => c.status === 'pendente').sort((a, b) => a.data_hora.localeCompare(b.data_hora));
-  const historico = consultas.filter(c => c.status !== 'pendente').sort((a, b) => b.data_hora.localeCompare(a.data_hora));
+  const pendentes = Array.isArray(consultas) ? consultas.filter(c => c.status === 'pendente').sort((a, b) => a.data_hora.localeCompare(b.data_hora)) : [];
+  const historico = Array.isArray(consultas) ? consultas.filter(c => c.status !== 'pendente').sort((a, b) => b.data_hora.localeCompare(a.data_hora)) : [];
   const proxima = pendentes.length > 0 ? pendentes[0] : null;
 
   return (
