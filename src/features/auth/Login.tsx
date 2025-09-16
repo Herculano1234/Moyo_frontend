@@ -136,7 +136,7 @@ export default function Login() {
       setLoading(false);
       localStorage.setItem("moyo-auth", "true");
       localStorage.setItem("moyo-perfil", "adminhospital");
-      navigate("/adminhospitaldashboard");
+  navigate("/adminhospital");
       return;
     }
 
@@ -157,80 +157,89 @@ export default function Login() {
         localStorage.setItem("moyo-perfil", "adminhospital");
         localStorage.setItem("moyo-user", JSON.stringify(found));
         setLoading(false);
-        navigate("/adminhospitaldashboard");
+  navigate("/adminhospital");
         return;
       }
     } catch (err) {
       // ignore erro, segue fluxo normal
-    }
-
-    // Verificação de login simulado
-    if (
-      (perfil === "paciente" && email === "pac@moyo.com" && password === "1") ||
-      (perfil === "profissional" && email === "pro@moyo.com" && password === "1")
-    ) {
-      setTimeout(() => {
-        localStorage.setItem("moyo-auth", "true");
-        localStorage.setItem("moyo-perfil", perfil);
-        setLoading(false);
-        if (perfil === "paciente") {
-          navigate("/paciente");
-        } else {
-          navigate("/dashboard");
-        }
-      }, 1000);
-      return;
-    }
-    
-    // Admin login
-    if (
-      perfil === "profissional" &&
-      email === "Moyo@moyo.com" &&
-      password === "Moyo.Admin"
-    ) {
-      setTimeout(() => {
-        localStorage.setItem("moyo-auth", "true");
-        localStorage.setItem("moyo-perfil", "admin");
-        setLoading(false);
-        navigate("/admin");
-      }, 1000);
-      return;
     }
     
     // Login via API
     let url = "";
     if (perfil === "paciente") {
       url = `https://${apiHost}/login`;
-    } else if (perfil === "profissional") {
-      url = `https://${apiHost}/login-profissional`;
-    }
-    
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, senha: password })
-    })
-      .then(async (response) => {
-        setLoading(false);
-        if (!response.ok) {
-          const errorData = await response.json();
-          setError(errorData.error || "Credenciais inválidas. Verifique seu e-mail, senha e perfil.");
-          return;
-        }
-        const data = await response.json();
-        localStorage.setItem("moyo-auth", "true");
-        localStorage.setItem("moyo-perfil", perfil);
-        localStorage.setItem("moyo-user", JSON.stringify(data));
-        if (perfil === "paciente") {
-          navigate("/paciente");
-        } else {
-          navigate("/dashboard");
-        }
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, senha: password })
       })
-      .catch(() => {
-        setLoading(false);
-        setError("Erro ao conectar ao servidor.");
+        .then(async (response) => {
+          setLoading(false);
+          if (!response.ok) {
+            const errorData = await response.json();
+            setError(errorData.error || "Credenciais inválidas. Verifique seu e-mail, senha e perfil.");
+            return;
+          }
+          const data = await response.json();
+          localStorage.setItem("moyo-auth", "true");
+          localStorage.setItem("moyo-perfil", perfil);
+          localStorage.setItem("moyo-user", JSON.stringify(data));
+          navigate("/paciente");
+        })
+        .catch(() => {
+          setLoading(false);
+          setError("Erro ao conectar ao servidor.");
+        });
+    } else if (perfil === "profissional") {
+      // 1. Verifica na tabela de profissionais
+      let profResp = await fetch(`https://${apiHost}/login-profissional`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, senha: password })
       });
+      if (profResp.ok) {
+        const data = await profResp.json();
+        localStorage.setItem("moyo-auth", "true");
+        localStorage.setItem("moyo-perfil", "profissional");
+        localStorage.setItem("moyo-user", JSON.stringify(data));
+        setLoading(false);
+        navigate("/dashboard");
+        return;
+      }
+      // 2. Se não existir, verifica na tabela de admin_hospital
+      let adminHospResp = await fetch(`https://${apiHost}/login-adminhospital`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, senha: password })
+      });
+      if (adminHospResp.ok) {
+        const data = await adminHospResp.json();
+        localStorage.setItem("moyo-auth", "true");
+        localStorage.setItem("moyo-perfil", "adminhospital");
+        localStorage.setItem("moyo-user", JSON.stringify(data));
+        setLoading(false);
+        // Redireciona para adminhospital e passa os dados do hospital
+        navigate("/adminhospital");
+        return;
+      }
+      // 3. Se não existir, verifica na tabela de admin_moyo
+      let adminResp = await fetch(`https://${apiHost}/login-admin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, senha: password })
+      });
+      if (adminResp.ok) {
+        const data = await adminResp.json();
+        localStorage.setItem("moyo-auth", "true");
+        localStorage.setItem("moyo-perfil", "admin");
+        localStorage.setItem("moyo-user", JSON.stringify(data));
+        setLoading(false);
+        navigate("/admin");
+        return;
+      }
+      setLoading(false);
+      setError("Credenciais inválidas. Verifique seu e-mail, senha e perfil.");
+    }
   };
 
   return (

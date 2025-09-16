@@ -2,13 +2,10 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-// Configurar baseURL do axios para backend local
-if (process.env.NODE_ENV === 'development') {
-  axios.defaults.baseURL = 'http://localhost:4000';
-}
+import apiHost from '../../config/apiHost';
+axios.defaults.baseURL = `https://${apiHost}`;
 
-// WebSocket para atualização em tempo real
-const WS_URL = 'http://localhost:4000'; // ajuste para sua URL real
+// ...existing code...
 
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -149,21 +146,10 @@ const HospitalAdmin: React.FC = () => {
   });
 
   // Buscar hospitais do backend
-  // WebSocket para hospitais
-  const ws = useRef<WebSocket | null>(null);
   useEffect(() => {
     setLoadingHospitals(true);
     // Fetch inicial
     axios.get('/hospitais').then(res => setHospitals(res.data)).catch(() => setHospitals([])).finally(() => setLoadingHospitals(false));
-    // WebSocket
-    ws.current = new window.WebSocket(WS_URL + '/hospitais');
-    ws.current.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (Array.isArray(data)) setHospitals(data);
-      } catch {}
-    };
-    return () => { ws.current?.close(); };
   }, []);
 
   // Handlers

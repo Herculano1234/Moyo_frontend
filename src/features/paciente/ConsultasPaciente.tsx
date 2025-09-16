@@ -204,11 +204,11 @@ const perguntasTriagem = [
 ];
 
 // Funções de armazenamento e integração com API
-import apiHost from '../../config/apiHost';
+const apiHost = window.location.hostname;
 
 async function getConsultasAPI(pacienteId: string): Promise<Consulta[]> {
   try {
-  const resp = await fetch(`https://${apiHost}/pacientes/${pacienteId}/consultas`);
+    const resp = await fetch(`http://${apiHost}:4000/pacientes/${pacienteId}/consultas`);
     if (!resp.ok) throw new Error('Erro ao buscar consultas');
     return await resp.json();
   } catch {
@@ -225,7 +225,7 @@ async function saveConsultaAPI(pacienteId: number, consulta: Partial<Consulta>):
       prioridade: consulta.prioridade || null,
       local: consulta.local || null
     };
-  const resp = await fetch(`https://${apiHost}/pacientes/${pacienteId}/consultas`, {
+    const resp = await fetch(`http://${apiHost}:4000/pacientes/${pacienteId}/consultas`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

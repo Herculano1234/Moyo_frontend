@@ -21,7 +21,7 @@ export default function Pacientes() {
       setLoading(true);
       setErro("");
       try {
-  const resp = await fetch(`https://${apiHost}/pacientes`);
+  const resp = await fetch(`${apiHost}/pacientes`);
         const data = await resp.json();
         setPacientes(data);
       } catch (e) {
