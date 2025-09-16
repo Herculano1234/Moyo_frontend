@@ -164,21 +164,6 @@ export default function Login() {
       // ignore erro, segue fluxo normal
     }
     
-    // Admin login
-    if (
-      perfil === "profissional" &&
-      email === "Moyo@moyo.com" &&
-      password === "Moyo.Admin"
-    ) {
-      setTimeout(() => {
-        localStorage.setItem("moyo-auth", "true");
-        localStorage.setItem("moyo-perfil", "admin");
-        setLoading(false);
-        navigate("/admin");
-      }, 1000);
-      return;
-    }
-    
     // Login via API
     let url = "";
     if (perfil === "paciente") {
