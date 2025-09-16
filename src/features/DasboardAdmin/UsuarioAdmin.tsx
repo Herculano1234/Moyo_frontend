@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import apiHost from '../../config/apiHost';
 
-// Configurar baseURL do axios para backend local
-if (process.env.NODE_ENV === 'development') {
-  axios.defaults.baseURL = 'https://moyo-backend.vercel.app';
-}
+axios.defaults.baseURL = `https://${apiHost}`;
+
 
 interface Usuario {
   id: number;
@@ -91,7 +90,7 @@ const UsuarioAdmin: React.FC = () => {
         setLoading(false);
         return;
       }
-      const response = await axios.get(endpoint);
+  const response = await axios.get(endpoint);
       // Adiciona campo tipo para facilitar filtro
       setUsuarios(response.data.map((u: any) => ({ ...u, tipo })));
     } catch (err) {

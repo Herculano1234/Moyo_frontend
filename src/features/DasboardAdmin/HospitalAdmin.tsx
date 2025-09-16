@@ -2,10 +2,8 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-// Configurar baseURL do axios para backend local
-if (process.env.NODE_ENV === 'development') {
-  axios.defaults.baseURL = 'https://moyo-backend.vercel.app';
-}
+import apiHost from '../../config/apiHost';
+axios.defaults.baseURL = `https://${apiHost}`;
 
 // ...existing code...
 

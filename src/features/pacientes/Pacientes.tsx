@@ -1,3 +1,4 @@
+import apiHost from '../../config/apiHost';
 import React, { useEffect, useState } from "react";
 
 interface Paciente {
@@ -20,7 +21,7 @@ export default function Pacientes() {
       setLoading(true);
       setErro("");
       try {
-        const resp = await fetch("http://localhost:4000/pacientes");
+  const resp = await fetch(`${apiHost}/pacientes`);
         const data = await resp.json();
         setPacientes(data);
       } catch (e) {
