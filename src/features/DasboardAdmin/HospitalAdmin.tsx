@@ -7,8 +7,7 @@ if (process.env.NODE_ENV === 'development') {
   axios.defaults.baseURL = 'https://moyosaude-backend.vercel.app:4000';
 }
 
-// WebSocket para atualização em tempo real
-const WS_URL = 'https://moyosaude-backend.vercel.app:4000'; // ajuste para sua URL real
+// ...existing code...
 
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -149,21 +148,10 @@ const HospitalAdmin: React.FC = () => {
   });
 
   // Buscar hospitais do backend
-  // WebSocket para hospitais
-  const ws = useRef<WebSocket | null>(null);
   useEffect(() => {
     setLoadingHospitals(true);
     // Fetch inicial
     axios.get('/hospitais').then(res => setHospitals(res.data)).catch(() => setHospitals([])).finally(() => setLoadingHospitals(false));
-    // WebSocket
-    ws.current = new window.WebSocket(WS_URL + '/hospitais');
-    ws.current.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (Array.isArray(data)) setHospitals(data);
-      } catch {}
-    };
-    return () => { ws.current?.close(); };
   }, []);
 
   // Handlers

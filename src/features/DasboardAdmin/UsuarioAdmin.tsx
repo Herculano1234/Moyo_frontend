@@ -169,8 +169,8 @@ const UsuarioAdmin: React.FC = () => {
 
   // Filtrar usuários com base no termo de busca
   const filteredUsuarios = usuarios.filter(usuario =>
-    usuario.nome_admi.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    usuario.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (usuario.nome_admi?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+    (usuario.email?.toLowerCase() || "").includes(searchTerm.toLowerCase())
   );
 
   return (

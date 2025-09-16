@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-// WebSocket para atualização em tempo real
-const WS_URL = 'https://moyosaude-backend.vercel.app:3001'; // ajuste para sua URL real
+// ...existing code...
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -111,21 +110,10 @@ const DashboardAdmin = () => {
   });
 
   // Buscar hospitais do backend (simples, só para demo)
-  // WebSocket para hospitais
-  const ws = useRef<WebSocket | null>(null);
   useEffect(() => {
     setLoadingHospitals(true);
     // Fetch inicial
     axios.get('/hospitais').then(res => setHospitals(res.data)).catch(() => setHospitals([])).finally(() => setLoadingHospitals(false));
-    // WebSocket
-    ws.current = new window.WebSocket(WS_URL + '/hospitais');
-    ws.current.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (Array.isArray(data)) setHospitals(data);
-      } catch {}
-    };
-    return () => { ws.current?.close(); };
   }, []);
 
   const handleHospitalInput = (e: React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>) => {
