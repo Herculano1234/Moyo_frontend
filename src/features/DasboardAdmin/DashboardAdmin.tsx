@@ -200,17 +200,17 @@ const DashboardAdmin = () => {
   ];
   
   // Filtrar hospitais baseado no termo de busca
-  const filteredHospitals = hospitals.filter(hospital => 
+  const filteredHospitals = Array.isArray(hospitals) ? hospitals.filter(hospital => 
     (hospital.nome || hospital.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (hospital.endereco || hospital.address || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
+  ) : [];
+
   // Filtrar usuários baseado no tipo selecionado
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = Array.isArray(users) ? users.filter(user => 
     activeUserTab === "patients" ? user.type === "Paciente" :
     activeUserTab === "professionals" ? ["Médico", "Enfermeiro"].includes(user.type) :
     activeUserTab === "admins" ? user.type === "Administrador" : true
-  );
+  ) : [];
 
   return (
     <div className="animate-fadeIn">

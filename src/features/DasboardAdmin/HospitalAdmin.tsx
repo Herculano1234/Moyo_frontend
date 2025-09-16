@@ -138,14 +138,14 @@ const HospitalAdmin: React.FC = () => {
   const [activeHospitalTab, setActiveHospitalTab] = useState<'list' | 'map' | 'indicators'>('list');
 
   // Filtered hospitals
-  const filteredHospitals = hospitals.filter(h => {
+  const filteredHospitals = Array.isArray(hospitals) ? hospitals.filter(h => {
     const term = searchTerm.toLowerCase();
     return (
       (h.nome || h.name || '').toLowerCase().includes(term) ||
       (h.endereco || h.address || '').toLowerCase().includes(term) ||
       (h.responsavel || h.manager || '').toLowerCase().includes(term)
     );
-  });
+  }) : [];
 
   // Buscar hospitais do backend
   useEffect(() => {
