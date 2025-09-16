@@ -163,24 +163,6 @@ export default function Login() {
     } catch (err) {
       // ignore erro, segue fluxo normal
     }
-
-    // Verificação de login simulado
-    if (
-      (perfil === "paciente" && email === "pac@moyo.com" && password === "1") ||
-      (perfil === "profissional" && email === "pro@moyo.com" && password === "1")
-    ) {
-      setTimeout(() => {
-        localStorage.setItem("moyo-auth", "true");
-        localStorage.setItem("moyo-perfil", perfil);
-        setLoading(false);
-        if (perfil === "paciente") {
-          navigate("/paciente");
-        } else {
-          navigate("/dashboard");
-        }
-      }, 1000);
-      return;
-    }
     
     // Admin login
     if (

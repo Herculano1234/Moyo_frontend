@@ -3,18 +3,15 @@ import axios from "axios";
 
 // Configurar baseURL do axios para backend local
 if (process.env.NODE_ENV === 'development') {
-  axios.defaults.baseURL = 'http://localhost:4000';
+  axios.defaults.baseURL = 'http://moyo-backend.vercel.app';
 }
 
 interface Usuario {
   id: number;
   nome_admi: string;
   data_nascimento: string;
-  numero_bilhete: string;
-  nome_hospital: string;
   senha: string;
   telefone: string;
-  localizacao_hospital: string;
   email: string;
   foto_perfil: string;
 }
@@ -22,12 +19,9 @@ interface Usuario {
 interface AdminFormData {
   nome_admi: string;
   data_nascimento: string;
-  numero_bilhete: string;
-  nome_hospital: string;
   senha: string;
   confirmarSenha: string;
   telefone: string;
-  localizacao_hospital: string;
   email: string;
   foto_perfil: File | null;
 }
@@ -35,12 +29,9 @@ interface AdminFormData {
 const initialForm: AdminFormData = {
   nome_admi: "",
   data_nascimento: "",
-  numero_bilhete: "",
-  nome_hospital: "",
   senha: "",
   confirmarSenha: "",
   telefone: "",
-  localizacao_hospital: "",
   email: "",
   foto_perfil: null
 };
@@ -67,7 +58,7 @@ const UsuarioAdmin: React.FC = () => {
   const fetchUsuarios = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("/admimhospital");
+      const response = await axios.get("/administradores_hospital");
       setUsuarios(response.data);
     } catch (err) {
       setError("Erro ao carregar usuários");
@@ -98,25 +89,23 @@ const UsuarioAdmin: React.FC = () => {
     }
 
     const formData = new FormData();
-    formData.append('nome_admi', form.nome_admi);
+    formData.append('nome', form.nome_admi);
     formData.append('data_nascimento', form.data_nascimento);
-    formData.append('numero_bilhete', form.numero_bilhete);
-    formData.append('nome_hospital', form.nome_hospital);
-    formData.append('senha', form.senha);
     formData.append('telefone', form.telefone);
-    formData.append('localizacao_hospital', form.localizacao_hospital);
     formData.append('email', form.email);
+    formData.append('senha', form.senha);
+    // O backend espera 'foto_url', não 'foto_perfil'
     if (form.foto_perfil) {
-      formData.append('foto_perfil', form.foto_perfil);
+      formData.append('foto_url', form.foto_perfil);
     }
 
     try {
       if (editMode && currentUsuario) {
-        await axios.put(`/admimhospital/${currentUsuario.id}`, formData, {
+        await axios.put(`/administradores_hospital/${currentUsuario.id}`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
       } else {
-        await axios.post("/admimhospital", formData, {
+        await axios.post("/administradores_hospital", formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
       }
@@ -142,12 +131,9 @@ const UsuarioAdmin: React.FC = () => {
     setForm({
       nome_admi: usuario.nome_admi,
       data_nascimento: usuario.data_nascimento,
-      numero_bilhete: usuario.numero_bilhete,
-      nome_hospital: usuario.nome_hospital,
       senha: "",
       confirmarSenha: "",
       telefone: usuario.telefone,
-      localizacao_hospital: usuario.localizacao_hospital,
       email: usuario.email,
       foto_perfil: null
     });
@@ -159,7 +145,7 @@ const UsuarioAdmin: React.FC = () => {
     if (!usuarioToDelete) return;
     
     try {
-      await axios.delete(`/admimhospital/${usuarioToDelete.id}`);
+      await axios.delete(`/administradores_hospital/${usuarioToDelete.id}`);
       setShowDeleteModal(false);
       setUsuarioToDelete(null);
       fetchUsuarios(); // Recarregar a lista
@@ -252,7 +238,7 @@ const UsuarioAdmin: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telefone</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data de Nascimento</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hospital</th>
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hospital</th> */}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
@@ -292,9 +278,9 @@ const UsuarioAdmin: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {usuario.data_nascimento ? new Date(usuario.data_nascimento).toLocaleDateString('pt-BR') : "-"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {usuario.nome_hospital}
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
                         <button 
@@ -371,18 +357,7 @@ const UsuarioAdmin: React.FC = () => {
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-1">Número do Bilhete *</label>
-                  <input
-                    type="text"
-                    name="numero_bilhete"
-                    placeholder="Número do bilhete"
-                    value={form.numero_bilhete}
-                    onChange={handleChange}
-                    className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-400"
-                    required
-                  />
-                </div>
+                {/* Campo removido: Número do Bilhete */}
                 
                 <div>
                   <label className="block text-gray-700 font-semibold mb-1">Telefone *</label>
@@ -412,31 +387,9 @@ const UsuarioAdmin: React.FC = () => {
               
               {/* Coluna 2 */}
               <div className="space-y-4">
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-1">Nome do Hospital *</label>
-                  <input
-                    type="text"
-                    name="nome_hospital"
-                    placeholder="Nome do hospital"
-                    value={form.nome_hospital}
-                    onChange={handleChange}
-                    className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-400"
-                    required
-                  />
-                </div>
+                {/* Campo removido: Nome do Hospital */}
                 
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-1">Localização do Hospital *</label>
-                  <input
-                    type="text"
-                    name="localizacao_hospital"
-                    placeholder="Localização do hospital"
-                    value={form.localizacao_hospital}
-                    onChange={handleChange}
-                    className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-400"
-                    required
-                  />
-                </div>
+                {/* Campo removido: Localização do Hospital */}
                 
                 <div>
                   <label className="block text-gray-700 font-semibold mb-1">Foto de Perfil</label>

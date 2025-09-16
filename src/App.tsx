@@ -7,13 +7,6 @@
   }
   return <Outlet />;
 }
-import AdminHospitalDashboard from "./features/AdminHospital/AdminHospitalDashboard";
-import HomeHospital from "./features/AdminHospital/HomeHospital";
-import ProfissionaisHospital from "./features/AdminHospital/ProfissionaisHospital";
-import EspecialidadesHospital from "./features/AdminHospital/EspecialidadesHospital";
-import ExamesHospital from "./features/AdminHospital/ExamesHospital";
-import HorariosHospital from "./features/AdminHospital/HorariosHospital";
-import ConfigHospital from "./features/AdminHospital/ConfigHospital";
 import React from "react";
 import Sidebar from "./components/Sidebar";
 import Navbar from "./components/Navbar";
@@ -97,18 +90,6 @@ function App() {
         </Route>
       </Route>
       <Route path="/admin" element={<AdminDashboard />} />
-
-      {/* Rotas do Admin do Hospital */}
-      <Route element={<RequireAdminHospital />}>
-        <Route path="/adminhospital" element={<AdminHospitalDashboard />}>
-          <Route index element={<HomeHospital />} />
-          <Route path="profissionais" element={<ProfissionaisHospital />} />
-          <Route path="especialidades" element={<EspecialidadesHospital />} />
-          <Route path="exames" element={<ExamesHospital />} />
-          <Route path="horarios" element={<HorariosHospital />} />
-          <Route path="configuracoes" element={<ConfigHospital />} />
-        </Route>
-      </Route>
     </Routes>
   );
 }
