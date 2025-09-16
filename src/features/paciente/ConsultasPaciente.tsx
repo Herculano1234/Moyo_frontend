@@ -204,11 +204,11 @@ const perguntasTriagem = [
 ];
 
 // Funções de armazenamento e integração com API
-import apiHost from '../../config/apiHost';
+const apiHost = window.location.hostname;
 
 async function getConsultasAPI(pacienteId: string): Promise<Consulta[]> {
   try {
-  const resp = await fetch(`https://${apiHost}/pacientes/${pacienteId}/consultas`);
+    const resp = await fetch(`http://${apiHost}:4000/pacientes/${pacienteId}/consultas`);
     if (!resp.ok) throw new Error('Erro ao buscar consultas');
     return await resp.json();
   } catch {
@@ -225,7 +225,7 @@ async function saveConsultaAPI(pacienteId: number, consulta: Partial<Consulta>):
       prioridade: consulta.prioridade || null,
       local: consulta.local || null
     };
-  const resp = await fetch(`https://${apiHost}/pacientes/${pacienteId}/consultas`, {
+    const resp = await fetch(`http://${apiHost}:4000/pacientes/${pacienteId}/consultas`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -436,8 +436,8 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
 
   const unidadesComEspecialidade = useMemo(() => {
     if (!especialidade) return [];
-  return Array.isArray(unidadesHospitalares) ? unidadesHospitalares.filter((unidade: any) =>
-  unidade.especialidades.some((esp: any) =>
+    return unidadesHospitalares.filter(unidade =>
+      unidade.especialidades.some(esp =>
         esp.toLowerCase().includes(especialidade.toLowerCase())
       )
     );
@@ -820,12 +820,12 @@ const TriagemModal: React.FC<TriagemModalProps> = ({
                           let novasRespostas = [...respostasAtuais];
                           
                           if (selecionado) {
-                    novasRespostas = Array.isArray(novasRespostas) ? novasRespostas.filter((r: any) => r !== opcao) : [];
+                            novasRespostas = novasRespostas.filter(r => r !== opcao);
                           } else {
                             if (opcao === "Nenhum destes") {
                               novasRespostas = [opcao];
                             } else {
-                      novasRespostas = Array.isArray(novasRespostas) ? novasRespostas.filter((r: any) => r !== "Nenhum destes") : [];
+                              novasRespostas = novasRespostas.filter(r => r !== "Nenhum destes");
                               novasRespostas.push(opcao);
                             }
                           }
@@ -1165,13 +1165,13 @@ export default function ConsultasPaciente() {
   // Atualizar unidades filtradas quando especialidade mudar
   useEffect(() => {
     if (especialidade && userLocation) {
-  const unidadesComEspecialidade = Array.isArray(unidadesHospitalares) ? unidadesHospitalares.filter((unidade: any) =>
-  unidade.especialidades.some((esp: any) =>
+      const unidadesComEspecialidade = unidadesHospitalares.filter(unidade =>
+        unidade.especialidades.some(esp =>
           esp.toLowerCase().includes(especialidade.toLowerCase())
         )
       );
 
-  const unidadesComDistancia = unidadesComEspecialidade.map((unidade: any) => ({
+      const unidadesComDistancia = unidadesComEspecialidade.map(unidade => ({
         ...unidade,
         distancia: calcularDistancia(
           userLocation[0],
@@ -1179,7 +1179,7 @@ export default function ConsultasPaciente() {
           unidade.lat,
           unidade.lng
         )
-  })).sort((a: any, b: any) => (a.distancia || Infinity) - (b.distancia || Infinity));
+      })).sort((a, b) => (a.distancia || Infinity) - (b.distancia || Infinity));
 
       setUnidadesFiltradas(unidadesComDistancia);
     } else {
@@ -1218,7 +1218,7 @@ export default function ConsultasPaciente() {
 
   // Função para filtrar consultas por data e prioridade
   const filtrarConsultas = (consultas: Consulta[], filtroData: string, filtroPrioridade: string) => {
-  return Array.isArray(consultas) ? consultas.filter((c: any) =>
+    return consultas.filter(c =>
       (!filtroData || c.data_hora.startsWith(filtroData)) &&
       (!filtroPrioridade || (c.prioridade || '').toLowerCase().includes(filtroPrioridade.toLowerCase()))
     );
@@ -1274,8 +1274,8 @@ export default function ConsultasPaciente() {
   };
 
   // Filtrar consultas
-  const pendentes = filtrarConsultas(Array.isArray(consultas) ? consultas.filter((c: any) => c.status === 'pendente') : [], filtroData, filtroPrioridade);
-  const historico = filtrarConsultas(Array.isArray(consultas) ? consultas.filter((c: any) => c.status !== 'pendente') : [], filtroData, filtroPrioridade);
+  const pendentes = filtrarConsultas(consultas.filter(c => c.status === 'pendente'), filtroData, filtroPrioridade);
+  const historico = filtrarConsultas(consultas.filter(c => c.status !== 'pendente'), filtroData, filtroPrioridade);
 
   // Função para exibir perguntas e respostas coloridas
   function renderPerguntasRespostas(triagem: Record<string, string | string[]>) {
@@ -1436,7 +1436,7 @@ export default function ConsultasPaciente() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fadein">
-              {pendentes.map((consulta: any) => (
+              {pendentes.map(consulta => (
                 <ConsultaCard 
                   key={consulta.id} 
                   consulta={consulta} 
@@ -1463,7 +1463,7 @@ export default function ConsultasPaciente() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 animate-fadein">
-              {historico.map((consulta: any) => (
+              {historico.map(consulta => (
                 <ConsultaCard 
                   key={consulta.id} 
                   consulta={consulta} 

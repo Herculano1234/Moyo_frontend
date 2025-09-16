@@ -168,10 +168,10 @@ const UsuarioAdmin: React.FC = () => {
   };
 
   // Filtrar usuários com base no termo de busca
-  const filteredUsuarios = Array.isArray(usuarios) ? usuarios.filter(usuario =>
+  const filteredUsuarios = usuarios.filter(usuario =>
     (usuario.nome_admi?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
     (usuario.email?.toLowerCase() || "").includes(searchTerm.toLowerCase())
-  ) : [];
+  );
 
   return (
     <div className="animate-fadeIn">

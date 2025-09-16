@@ -1,4 +1,3 @@
-import apiHost from '../../config/apiHost';
 import React, { useEffect, useState } from "react";
 
 // Interface alinhada ao backend
@@ -36,7 +35,7 @@ export default function DashboardHomePaciente() {
     const pacienteData = JSON.parse(user);
     setPaciente(pacienteData);
     // Buscar consultas do paciente
-  fetch(`https://${apiHost}/pacientes/${pacienteData.id}/consultas`)
+    fetch(`http://localhost:4000/pacientes/${pacienteData.id}/consultas`)
       .then(async (res) => {
         if (!res.ok) return setConsultas([]);
         const data = await res.json();
@@ -50,8 +49,8 @@ export default function DashboardHomePaciente() {
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
 
   // Separar pendentes e histórico
-  const pendentes = Array.isArray(consultas) ? consultas.filter(c => c.status === 'pendente').sort((a, b) => a.data_hora.localeCompare(b.data_hora)) : [];
-  const historico = Array.isArray(consultas) ? consultas.filter(c => c.status !== 'pendente').sort((a, b) => b.data_hora.localeCompare(a.data_hora)) : [];
+  const pendentes = consultas.filter(c => c.status === 'pendente').sort((a, b) => a.data_hora.localeCompare(b.data_hora));
+  const historico = consultas.filter(c => c.status !== 'pendente').sort((a, b) => b.data_hora.localeCompare(a.data_hora));
   const proxima = pendentes.length > 0 ? pendentes[0] : null;
 
   return (

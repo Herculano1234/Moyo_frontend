@@ -1,4 +1,3 @@
-import apiHost from '../../config/apiHost';
 import React, { useEffect, useState } from "react";
 
 interface Paciente {
@@ -21,7 +20,7 @@ export default function Pacientes() {
       setLoading(true);
       setErro("");
       try {
-  const resp = await fetch(`https://${apiHost}/pacientes`);
+        const resp = await fetch("http://localhost:4000/pacientes");
         const data = await resp.json();
         setPacientes(data);
       } catch (e) {
@@ -33,7 +32,7 @@ export default function Pacientes() {
     fetchPacientes();
   }, []);
 
-  const pacientesFiltrados = Array.isArray(pacientes) ? pacientes.filter((p: any) =>
+  const pacientesFiltrados = pacientes.filter(p =>
     p.nome.toLowerCase().includes(busca.toLowerCase()) ||
     p.email.toLowerCase().includes(busca.toLowerCase())
   );
@@ -67,7 +66,7 @@ export default function Pacientes() {
             {pacientesFiltrados.length === 0 ? (
               <tr><td colSpan={5} className="text-center py-4 text-moyo-gray">Nenhum paciente encontrado.</td></tr>
             ) : (
-              pacientesFiltrados.map((p: any) => (
+              pacientesFiltrados.map(p => (
                 <tr key={p.id} className="border-b hover:bg-gray-50">
                   <td className="px-4 py-2 font-semibold">{p.nome}</td>
                   <td className="px-4 py-2">{p.email}</td>
