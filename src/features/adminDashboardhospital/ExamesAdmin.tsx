@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Chart } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,9 +9,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Chart } from 'react-chartjs-2';
 
-// Registrar componentes do ChartJS
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -20,27 +19,34 @@ ChartJS.register(
   Legend
 );
 
+interface Exam {
+  id: number;
+  nome: string;
+  disponivel: boolean;
+  profissional_id?: number;
+  paciente_id?: number;
+  hospital_id: number;
+  data_hora: string;
+  status: string;
+  resultado?: string;
+  observacoes?: string;
+  criado_em: string;
+  doneCount: number; // Add this line
+}
+
 interface Doctor {
   id: number;
   nome: string;
   especialidade: string;
 }
 
-interface Exam {
-  id: number;
-  name: string;
-  available: boolean;
-  doneCount?: number;
-  profissional_id?: number;
-  paciente_id?: number;
-  data_hora?: string;
-  status?: string;
-}
-
 const ExamesAdmin: React.FC = () => {
   const [exams, setExams] = useState<Exam[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [newExamName, setNewExamName] = useState("");
+  const [chartData, setChartData] = useState<any>(null);
   const hospitalId = localStorage.getItem('moyo-hospital-id');
 
   // Buscar exames e médicos do banco de dados
@@ -48,9 +54,13 @@ const ExamesAdmin: React.FC = () => {
     const fetchData = async () => {
       try {
         const [examsResponse, doctorsResponse] = await Promise.all([
-          fetch(`${process.env.REACT_APP_API_URL}/api/exames/${hospitalId}`),
+          fetch(`${process.env.REACT_APP_API_URL}/api/exames/hospital/${hospitalId}`),
           fetch(`${process.env.REACT_APP_API_URL}/api/profissionais/hospital/${hospitalId}`)
         ]);
+
+        if (!examsResponse.ok || !doctorsResponse.ok) {
+          throw new Error('Erro ao buscar dados');
+        }
 
         const examsData = await examsResponse.json();
         const doctorsData = await doctorsResponse.json();
@@ -58,26 +68,26 @@ const ExamesAdmin: React.FC = () => {
         setExams(examsData);
         setDoctors(doctorsData);
       } catch (error) {
-        console.error('Erro ao buscar dados:', error);
+        console.error('Erro:', error);
+        setError('Erro ao carregar dados');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    if (hospitalId) {
+      fetchData();
+    }
   }, [hospitalId]);
-  
-  const [newExamName, setNewExamName] = useState("");
-  const [chartData, setChartData] = useState<any>(null);
 
   // Calcular totais
   const totalExams = exams.length;
-  const availableExams = exams.filter(exam => exam.available).length;
-  const unavailableExams = exams.filter(exam => !exam.available).length;
+  const availableExams = exams.filter(exam => exam.disponivel).length;
+  const unavailableExams = exams.filter(exam => !exam.disponivel).length;
 
   // Preparar dados do gráfico
   useEffect(() => {
-    const labels = exams.map(exam => exam.name);
+    const labels = exams.map(exam => exam.nome);
     const data = exams.map(exam => exam.doneCount || 0);
     
     setChartData({
@@ -109,8 +119,8 @@ const ExamesAdmin: React.FC = () => {
 
   // Adicionar novo exame
   const handleAddExam = async () => {
-    if (newExamName.trim() === "") return;
-    
+    if (!newExamName.trim()) return;
+
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/exames`, {
         method: 'POST',
@@ -120,17 +130,23 @@ const ExamesAdmin: React.FC = () => {
         body: JSON.stringify({
           nome: newExamName,
           disponivel: true,
-          hospital_id: hospitalId
+          hospital_id: hospitalId,
+          data_hora: new Date().toISOString(),
+          status: 'disponivel',
+          doneCount: 0 // Add this line
         })
       });
 
-      if (response.ok) {
-        const newExam = await response.json();
-        setExams([...exams, newExam]);
-        setNewExamName("");
+      if (!response.ok) {
+        throw new Error('Erro ao adicionar exame');
       }
+
+      const newExam = await response.json();
+      setExams([...exams, newExam]);
+      setNewExamName('');
     } catch (error) {
-      console.error('Erro ao adicionar exame:', error);
+      console.error('Erro:', error);
+      setError('Erro ao adicionar exame');
     }
   };
 
@@ -144,21 +160,42 @@ const ExamesAdmin: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          disponivel: !exam?.available
+          disponivel: !exam?.disponivel
         })
       });
 
-      if (response.ok) {
-        setExams(exams.map(exam => 
-          exam.id === id ? { ...exam, available: !exam.available } : exam
-        ));
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar exame');
       }
+
+      setExams(exams.map(exam => 
+        exam.id === id ? { ...exam, disponivel: !exam.disponivel } : exam
+      ));
     } catch (error) {
-      console.error('Erro ao atualizar disponibilidade:', error);
+      console.error('Erro:', error);
+      setError('Erro ao atualizar exame');
     }
   };
 
-  // Atribuir exame a um médico
+  // Excluir exame
+  const deleteExam = async (id: number) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/exames/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao deletar exame');
+      }
+
+      setExams(exams.filter(exam => exam.id !== id));
+    } catch (error) {
+      console.error('Erro:', error);
+      setError('Erro ao deletar exame');
+    }
+  };
+
+  // Atribuir exame a médico
   const assignExamToDoctor = async (examId: number, doctorId: number) => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/exames/${examId}/assign`, {
@@ -171,29 +208,17 @@ const ExamesAdmin: React.FC = () => {
         })
       });
 
-      if (response.ok) {
-        const updatedExam = await response.json();
-        setExams(exams.map(exam => 
-          exam.id === examId ? updatedExam : exam
-        ));
+      if (!response.ok) {
+        throw new Error('Erro ao atribuir exame ao médico');
       }
-    } catch (error) {
-      console.error('Erro ao atribuir exame:', error);
-    }
-  };
 
-  // Excluir exame
-  const deleteExam = async (id: number) => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/exames/${id}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        setExams(exams.filter(exam => exam.id !== id));
-      }
+      const updatedExam = await response.json();
+      setExams(exams.map(exam => 
+        exam.id === examId ? { ...exam, profissional_id: doctorId } : exam
+      ));
     } catch (error) {
-      console.error('Erro ao excluir exame:', error);
+      console.error('Erro:', error);
+      setError('Erro ao atribuir exame ao médico');
     }
   };
 
@@ -268,12 +293,12 @@ const ExamesAdmin: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {exams.map((exam) => (
                 <tr key={exam.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{exam.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{exam.nome}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      exam.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      exam.disponivel ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
-                      {exam.available ? 'Disponível' : 'Indisponível'}
+                      {exam.disponivel ? 'Disponível' : 'Indisponível'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{exam.doneCount}</td>
@@ -295,12 +320,12 @@ const ExamesAdmin: React.FC = () => {
                     <button
                       onClick={() => toggleAvailability(exam.id)}
                       className={`mr-2 ${
-                        exam.available 
+                        exam.disponivel 
                           ? 'text-yellow-600 hover:text-yellow-900' 
                           : 'text-green-600 hover:text-green-900'
                       }`}
                     >
-                      {exam.available ? 'Tornar Indisponível' : 'Tornar Disponível'}
+                      {exam.disponivel ? 'Tornar Indisponível' : 'Tornar Disponível'}
                     </button>
                     <button
                       onClick={() => deleteExam(exam.id)}

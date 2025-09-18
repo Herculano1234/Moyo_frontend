@@ -1,3 +1,4 @@
+import apiHost from '../../config/apiHost';
 import React, { useEffect, useState } from "react";
 
 interface Paciente {
@@ -42,7 +43,7 @@ export default function Dashboard() {
     const profissionalData = JSON.parse(user);
     setProfissional(profissionalData);
     // Buscar consultas do profissional
-    fetch(`http://localhost:4000/profissionais/${profissionalData.id}/consultas`)
+  fetch(`${apiHost}/profissionais/${profissionalData.id}/consultas`)
       .then(async (res) => {
         if (!res.ok) return setConsultas([]);
         const data = await res.json();

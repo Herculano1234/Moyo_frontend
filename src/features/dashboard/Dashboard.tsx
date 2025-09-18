@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useState } from "react";
+﻿import apiHost from '../../config/apiHost';
+import React, { useEffect, useState } from "react";
 
 interface Paciente {
   id: number;
@@ -37,7 +38,7 @@ export default function Dashboard() {
       setLoading(true);
       setErro("");
       try {
-        const resp = await fetch("http://localhost:4000/consultas");
+  const resp = await fetch(`${apiHost}/consultas`);
         const data = await resp.json();
         setConsultas(data);
       } catch (e) {
@@ -48,7 +49,7 @@ export default function Dashboard() {
     }
     async function fetchPacientes() {
       try {
-        const resp = await fetch("http://localhost:4000/pacientes");
+  const resp = await fetch(`${apiHost}/pacientes`);
         const data = await resp.json();
         setPacientes(data);
       } catch {}

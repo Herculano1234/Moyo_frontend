@@ -1,22 +1,16 @@
 import React, { useState, useEffect } from "react";
 
 interface Exame {
-  id: string;
-  tipo: string;
-  data: string;
-  status: "pendente" | "concluido" | "cancelado";
-}
-
-function getExames(): Exame[] {
-  try {
-    return JSON.parse(localStorage.getItem("moyo-exames") || "[]");
-  } catch {
-    return [];
-  }
-}
-
-function saveExames(exames: Exame[]) {
-  localStorage.setItem("moyo-exames", JSON.stringify(exames));
+  id: number;
+  nome: string;
+  data_hora: string;
+  status: string;
+  disponivel: boolean;
+  paciente_id?: number;
+  hospital_id?: number;
+  profissional_id?: number;
+  resultado?: string;
+  observacoes?: string;
 }
 
 export default function ExamesPaciente() {
@@ -24,35 +18,104 @@ export default function ExamesPaciente() {
   const [data, setData] = useState("");
   const [exames, setExames] = useState<Exame[]>([]);
   const [agendado, setAgendado] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  const pacienteId = localStorage.getItem("moyo-user-id");
+  const hospitalId = localStorage.getItem("moyo-hospital-id");
+
+  // Buscar exames do banco de dados
   useEffect(() => {
-    setExames(getExames());
-  }, []);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const novoExame: Exame = {
-      id: Date.now().toString(),
-      tipo,
-      data,
-      status: "pendente",
+    const fetchExames = async () => {
+      try {
+        const response = await fetch(
+          `${process.env.REACT_APP_API_URL}/api/exames/paciente/${pacienteId}`
+        );
+        if (!response.ok) throw new Error("Erro ao buscar exames");
+        const data = await response.json();
+        setExames(data);
+      } catch (error) {
+        console.error("Erro:", error);
+        setError("Erro ao carregar exames");
+      } finally {
+        setLoading(false);
+      }
     };
-    const novos = [novoExame, ...exames];
-    setExames(novos);
-    saveExames(novos);
-    setAgendado(true);
-    setTipo("");
-    setData("");
-    setTimeout(() => setAgendado(false), 2000);
+
+    if (pacienteId) {
+      fetchExames();
+    }
+  }, [pacienteId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/exames`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nome: tipo,
+          data_hora: new Date(data).toISOString(),
+          status: "pendente",
+          disponivel: true,
+          paciente_id: pacienteId,
+          hospital_id: hospitalId,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Erro ao criar exame");
+
+      const novoExame = await response.json();
+      setExames([novoExame, ...exames]);
+      setAgendado(true);
+      setTipo("");
+      setData("");
+      setTimeout(() => setAgendado(false), 2000);
+    } catch (error) {
+      console.error("Erro:", error);
+      setError("Erro ao solicitar exame");
+    }
   };
 
-  const handleCancelar = (id: string) => {
-    const novos = exames.map((e) =>
-      e.id === id ? { ...e, status: "cancelado" as const } : e
-    );
-    setExames(novos);
-    saveExames(novos);
+  const handleCancelar = async (id: number) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/exames/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "cancelado",
+        }),
+      });
+
+      if (!response.ok) throw new Error("Erro ao cancelar exame");
+
+      setExames(
+        exames.map((exame) => (exame.id === id ? { ...exame, status: "cancelado" } : exame))
+      );
+    } catch (error) {
+      console.error("Erro:", error);
+      setError("Erro ao cancelar exame");
+    }
   };
+
+  if (!pacienteId) {
+    return <div className="text-red-500">Erro: Usuário não identificado. Por favor, faça login novamente.</div>;
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-moyo-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) return <div className="text-red-500">{error}</div>;
 
   const pendentes = exames.filter((e) => e.status === "pendente");
   const historico = exames.filter((e) => e.status !== "pendente");
@@ -123,8 +186,8 @@ export default function ExamesPaciente() {
                   className="flex items-center justify-between bg-moyo-primary/5 rounded-lg px-3 py-2"
                 >
                   <div>
-                    <span className="font-semibold">{e.tipo}</span>{" "}
-                    <span className="text-sm text-moyo-gray">({e.data})</span>
+                    <span className="font-semibold">{e.nome}</span>{" "}
+                    <span className="text-sm text-moyo-gray">({new Date(e.data_hora).toLocaleString()})</span>
                   </div>
                   <button
                     onClick={() => handleCancelar(e.id)}
@@ -153,8 +216,8 @@ export default function ExamesPaciente() {
                 className="flex items-center justify-between bg-gray-100 rounded-lg px-3 py-2"
               >
                 <div>
-                  <span className="font-semibold">{e.tipo}</span>{" "}
-                  <span className="text-sm text-moyo-gray">({e.data})</span>
+                  <span className="font-semibold">{e.nome}</span>{" "}
+                  <span className="text-sm text-moyo-gray">({new Date(e.data_hora).toLocaleString()})</span>
                   <span
                     className={`ml-2 text-xs px-2 py-1 rounded ${
                       e.status === "cancelado"

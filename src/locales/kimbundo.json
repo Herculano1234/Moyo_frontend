@@ -1,0 +1,20 @@
+{
+	"loginBemVindo": "Bem-vindo ao Moyo (Kimbundo)",
+	"loginMensagem": "Plataforma de saúde integrada (Kimbundo)",
+	"loginPaciente": "Paciente",
+	"loginProfissional": "Profissional",
+	"loginAcesseConta": "Acesse sua conta",
+	"loginInsiraCredenciais": "Insira suas credenciais para continuar",
+	"loginSelecionePerfil": "Selecione um perfil",
+	"loginPreenchaSenha": "Preencha a senha",
+	"loginEntrar": "Entrar",
+	"loginOuEntrarCom": "Ou entre com",
+	"loginNaoTemConta": "Não tem uma conta?",
+	"loginCadastrarAgora": "Cadastre-se agora",
+	"loginLembrarMe": "Lembrar-me",
+	"loginEsqueceuSenha": "Esqueceu a senha?",
+	"voltarPaginaInicial": "Voltar à página inicial",
+	"loginSeguroCriptografia": "Segurança com criptografia avançada",
+	"loginTriagemIA": "Triagem inteligente com IA",
+	"loginAcessoDispositivo": "Acesso em qualquer dispositivo"
+}

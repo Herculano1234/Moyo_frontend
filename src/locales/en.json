@@ -1,0 +1,20 @@
+{
+	"loginBemVindo": "Welcome to Moyo",
+	"loginMensagem": "Your complete and integrated health platform",
+	"loginPaciente": "Patient",
+	"loginProfissional": "Professional",
+	"loginAcesseConta": "Access your account",
+	"loginInsiraCredenciais": "Enter your credentials to continue",
+	"loginSelecionePerfil": "Select a profile",
+	"loginPreenchaSenha": "Enter the password",
+	"loginEntrar": "Sign in",
+	"loginOuEntrarCom": "Or sign in with",
+	"loginNaoTemConta": "Don't have an account?",
+	"loginCadastrarAgora": "Register now",
+	"loginLembrarMe": "Remember me",
+	"loginEsqueceuSenha": "Forgot password?",
+		"voltarPaginaInicial": "Back to home page",
+		"loginSeguroCriptografia": "Security with advanced encryption",
+		"loginTriagemIA": "Smart triage with AI",
+		"loginAcessoDispositivo": "Access on any device"
+}
