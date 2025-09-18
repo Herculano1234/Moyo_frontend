@@ -4,6 +4,30 @@ import { useNavigate } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
 export default function Signup() {
+  const [biError, setBiError] = useState("");
+
+  // Validação do BI: 2 letras maiúsculas na posição 9-10, 12 números, total 14 dígitos
+  function validarBI(valor: string) {
+    const regex = /^\d{8}[A-Z]{2}\d{4}$/;
+    if (!valor) return "";
+    if (!regex.test(valor)) {
+      return "O BI deve ter 8 números, 2 letras maiúsculas e 4 números (ex: 02355806LA0555).";
+    }
+    return "";
+  }
+  // Verifica se o e-mail já está cadastrado
+  const verificarEmail = async (email: string): Promise<void> => {
+    if (!email) return;
+    try {
+      const response = await fetch(`https://${apiHost}/verificar-email?email=${encodeURIComponent(email)}`);
+      const data = await response.json();
+      if (data.exists) {
+        setError("Este e-mail já possui uma conta cadastrada.");
+      }
+    } catch {
+      // Ignorar erro de conexão
+    }
+  };
   const [fotoPerfil, setFotoPerfil] = useState<string>("");
   const [perfil, setPerfil] = useState<string>("paciente");
   const [nome, setNome] = useState("");
@@ -30,6 +54,7 @@ export default function Signup() {
 
   // Função para calcular idade a partir da data de nascimento
   function calcularIdade(data: string) {
+    if (!data) return 0;
     const hoje = new Date();
     const nascimento = new Date(data);
     let idade = hoje.getFullYear() - nascimento.getFullYear();
@@ -39,6 +64,16 @@ export default function Signup() {
     }
     return idade;
   }
+
+  // Atualiza isMenor ao mudar data de nascimento
+  React.useEffect(() => {
+    if (perfil === "paciente" && dataNascimento) {
+      const idade = calcularIdade(dataNascimento);
+      setIsMenor(idade < 18);
+    } else {
+      setIsMenor(false);
+    }
+  }, [dataNascimento, perfil]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +92,7 @@ export default function Signup() {
       }
     }
 
-    try {
+  try {
       let url = `https://${apiHost}/pacientes`;
       let body: any = {
         nome,
@@ -196,7 +231,19 @@ export default function Signup() {
                   <label className="font-medium mb-1 block">Nº Bilhete de Identidade <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <i className="fas fa-id-card input-icon absolute left-3 top-3 text-moyo-gray"></i>
-                    <input type="text" className="w-full pl-10 pr-4 py-3 border rounded-lg bg-gray-50" value={bi} onChange={e => setBi(e.target.value)} required />
+                    <input
+                      type="text"
+                      className="w-full pl-10 pr-4 py-3 border rounded-lg bg-gray-50"
+                      value={bi}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setBi(e.target.value);
+                        setBiError(validarBI(e.target.value));
+                      }}
+                      required
+                    />
+                    {biError && (
+                      <div className="text-red-500 text-xs mt-1">{biError}</div>
+                    )}
                   </div>
                 </div>
                 <div className="form-group">
@@ -221,7 +268,14 @@ export default function Signup() {
                   <label className="font-medium mb-1 block">Email <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <i className="fas fa-envelope input-icon absolute left-3 top-3 text-moyo-gray"></i>
-                    <input type="email" className="w-full pl-10 pr-4 py-3 border rounded-lg bg-gray-50" value={email} onChange={e => setEmail(e.target.value)} required />
+                    <input 
+                      type="email" 
+                      className="w-full pl-10 pr-4 py-3 border rounded-lg bg-gray-50" 
+                      value={email} 
+                      onChange={e => setEmail(e.target.value)} 
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => verificarEmail(e.target.value)} 
+                      required 
+                    />
                   </div>
                 </div>
                 <div className="form-group">
@@ -250,7 +304,7 @@ export default function Signup() {
                 )}
                 {/* Profissional Fields */}
                 {perfil === "profissional" && (
-                  <>
+                  <div className="md:col-span-2">
                     <div className="form-group">
                       <label className="font-medium mb-1 block">Unidade Hospitalar <span className="text-red-500">*</span></label>
                       <div className="relative">
@@ -294,9 +348,8 @@ export default function Signup() {
                         </select>
                       </div>
                     </div>
-                  </>
-                )}
-                {/* Senha */}
+                  </div>
+                )}{/* Senha */}
                 <div className="form-group">
                   <label className="font-medium mb-1 block">Senha <span className="text-red-500">*</span></label>
                   <div className="relative">
@@ -327,6 +380,6 @@ export default function Signup() {
           &copy; {new Date().getFullYear()} Moyo Saúde. Todos os direitos reservados.
         </footer>
       </div>
+      
     </div>
-  );
-}
+  )};
