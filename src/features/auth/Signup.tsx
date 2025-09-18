@@ -4,14 +4,17 @@ import { useNavigate } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
 export default function Signup() {
+  const [unidades, setUnidades] = useState<Array<{ id: number, nome: string }>>([]);
+  // ...existing state declarations...
+  // (mova o useEffect para depois de todos os useState)
   const [biError, setBiError] = useState("");
 
-  // Validação do BI: 2 letras maiúsculas na posição 9-10, 12 números, total 14 dígitos
+  // Validação do BI: 9 números, 2 letras maiúsculas, 3 números (total 14 dígitos)
   function validarBI(valor: string) {
-    const regex = /^\d{8}[A-Z]{2}\d{4}$/;
+    const regex = /^\d{9}[A-Z]{2}\d{3}$/;
     if (!valor) return "";
     if (!regex.test(valor)) {
-      return "O BI deve ter 8 números, 2 letras maiúsculas e 4 números (ex: 02355806LA0555).";
+      return "Nº do BI invalido";
     }
     return "";
   }
@@ -49,6 +52,15 @@ export default function Signup() {
   const [error, setError] = useState("");
   const [codigoVerificacao, setCodigoVerificacao] = useState<string>("");
   const [emailEnviado, setEmailEnviado] = useState(false);
+  // Buscar unidades hospitalares ao abrir cadastro de profissional
+  React.useEffect(() => {
+    if (perfil === "profissional") {
+      fetch(`https://${apiHost}/hospitais`)
+        .then(res => res.json())
+        .then(data => setUnidades(data))
+        .catch(() => setUnidades([]));
+    }
+  }, [perfil]);
   const navigate = useNavigate();
 
 
@@ -309,7 +321,19 @@ export default function Signup() {
                       <label className="font-medium mb-1 block">Unidade Hospitalar <span className="text-red-500">*</span></label>
                       <div className="relative">
                         <i className="fas fa-hospital input-icon absolute left-3 top-3 text-moyo-gray"></i>
-                        <input type="text" className="w-full pl-10 pr-4 py-3 border rounded-lg bg-gray-50" value={unidade} onChange={e => setUnidade(e.target.value)} required={perfil === "profissional"} />
+                        <input
+                          list="unidades-list"
+                          className="w-full pl-10 pr-4 py-3 border rounded-lg bg-gray-50"
+                          value={unidade}
+                          onChange={e => setUnidade(e.target.value)}
+                          required={perfil === "profissional"}
+                          placeholder="Selecione ou pesquise a unidade"
+                        />
+                        <datalist id="unidades-list">
+                          {unidades.map(u => (
+                            <option key={u.id} value={u.nome} />
+                          ))}
+                        </datalist>
                       </div>
                     </div>
                     <div className="form-group">
