@@ -23,7 +23,22 @@ export default function Signup() {
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [isMenor, setIsMenor] = useState(false);
   const [error, setError] = useState("");
+  const [codigoVerificacao, setCodigoVerificacao] = useState<string>("");
+  const [emailEnviado, setEmailEnviado] = useState(false);
   const navigate = useNavigate();
+
+
+  // Função para calcular idade a partir da data de nascimento
+  function calcularIdade(data: string) {
+    const hoje = new Date();
+    const nascimento = new Date(data);
+    let idade = hoje.getFullYear() - nascimento.getFullYear();
+    const m = hoje.getMonth() - nascimento.getMonth();
+    if (m < 0 || (m === 0 && hoje.getDate() < nascimento.getDate())) {
+      idade--;
+    }
+    return idade;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,8 +49,16 @@ export default function Signup() {
     if (perfil === "paciente" && isMenor && !responsavel) return setError("Informe o contacto do responsável.");
     if (perfil === "profissional" && (!unidade || !municipio || !area || !cargo)) return setError("Preencha todos os campos do profissional.");
 
+    // Validação da data de nascimento do profissional
+    if (perfil === "profissional") {
+      const idadeProfissional = calcularIdade(dataNascimento);
+      if (isNaN(idadeProfissional) || idadeProfissional < 18) {
+        return setError("Profissional deve ter pelo menos 18 anos.");
+      }
+    }
+
     try {
-  let url = `https://${apiHost}/pacientes`;
+      let url = `https://${apiHost}/pacientes`;
       let body: any = {
         nome,
         email,
@@ -47,7 +70,7 @@ export default function Signup() {
         foto_perfil: fotoPerfil,
       };
       if (perfil === "profissional") {
-  url = `https://${apiHost}/profissionais`;
+        url = `https://${apiHost}/profissionais`;
         body = {
           nome,
           data_nascimento: dataNascimento,
@@ -77,8 +100,29 @@ export default function Signup() {
         return setError(errorData.error || "Erro ao cadastrar.");
       }
 
-      alert("Cadastro realizado com sucesso!");
-      navigate("/login");
+      // Gerar código de verificação
+      const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+      setCodigoVerificacao(codigo);
+      setEmailEnviado(true);
+
+      // Chamar API real para envio do código por e-mail
+      try {
+        const envioResponse = await fetch(`https://${apiHost}/enviar-codigo-verificacao`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, codigo })
+        });
+        if (!envioResponse.ok) {
+          const envioError = await envioResponse.json();
+          setError(envioError.error || "Erro ao enviar código de verificação por e-mail.");
+          return;
+        }
+      } catch (err) {
+        setError("Erro ao conectar ao serviço de envio de e-mail.");
+        return;
+      }
+
+      // Não navegar para login até verificação
     } catch (err) {
       setError("Erro ao conectar ao servidor.");
     }
