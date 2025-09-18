@@ -22,67 +22,34 @@ interface Review {
 }
 
 const ProfissionaisAdmin: React.FC = () => {
-  const [professionals, setProfessionals] = useState<Professional[]>([
-    {
-      id: 1,
-      name: "Dra. Ana Silva",
-      specialty: "Cardiologia",
-      status: "active",
-      email: "ana.silva@hospital.com",
-      phone: "(11) 99999-9999",
-      completedAppointments: 142,
-      scheduledAppointments: 15,
-      rating: 4.8,
-      reviews: [
-        {
-          id: 1,
-          patientName: "Carlos Mendes",
-          rating: 5,
-          comment: "Excelente profissional, muito atenciosa e competente.",
-          date: "2023-10-15"
-        },
-        {
-          id: 2,
-          patientName: "Marina Oliveira",
-          rating: 4.5,
-          comment: "Boa médica, mas às vezes demora um pouco nas consultas.",
-          date: "2023-09-22"
+  const [error, setError] = useState<string>("");
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [loading, setLoading] = useState(true);
+  const unidadeHospitalar = "Hospital Central"; // Exemplo: defina o nome ou id real da unidade do admin logado
+  const apiHost = "https://moyo-backend.vercel.app";
+
+  React.useEffect(() => {
+    async function fetchProfessionals() {
+      setLoading(true);
+      setError("");
+      try {
+        const response = await fetch(`${apiHost}/profissionais?unidade=${encodeURIComponent(unidadeHospitalar)}`);
+        if (!response.ok) {
+          setError("Erro ao buscar profissionais.");
+          setProfessionals([]);
+          setLoading(false);
+          return;
         }
-      ]
-    },
-    {
-      id: 2,
-      name: "Dr. Roberto Alves",
-      specialty: "Ortopedia",
-      status: "active",
-      email: "roberto.alves@hospital.com",
-      phone: "(11) 98888-8888",
-      completedAppointments: 89,
-      scheduledAppointments: 8,
-      rating: 4.6,
-      reviews: [
-        {
-          id: 1,
-          patientName: "Paula Costa",
-          rating: 5,
-          comment: "Ótimo diagnóstico, resolveu meu problema rapidamente.",
-          date: "2023-10-10"
-        }
-      ]
-    },
-    {
-      id: 3,
-      name: "Dra. Carla Santos",
-      specialty: "Pediatria",
-      status: "pending",
-      email: "carla.santos@email.com",
-      phone: "(11) 97777-7777",
-      completedAppointments: 0,
-      scheduledAppointments: 0,
-      rating: 0,
-      reviews: []
+        const data = await response.json();
+        setProfessionals(data);
+      } catch {
+        setError("Erro de conexão com o servidor.");
+        setProfessionals([]);
+      }
+      setLoading(false);
     }
-  ]);
+    fetchProfessionals();
+  }, [unidadeHospitalar]);
 
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -115,9 +82,24 @@ const ProfissionaisAdmin: React.FC = () => {
   };
 
   const handleAcceptProfessional = (id: number) => {
-    setProfessionals(professionals.map(prof => 
-      prof.id === id ? { ...prof, status: "active" } : prof
-    ));
+    // Aprovar profissional via backend
+    fetch(`/profissionais/${id}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "aprovado" })
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Erro ao aprovar profissional.");
+        return res.json();
+      })
+      .then(() => {
+        setProfessionals(professionals.map(prof =>
+          prof.id === id ? { ...prof, status: "active" } : prof
+        ));
+      })
+      .catch(() => {
+        setError("Erro ao aprovar profissional.");
+      });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -127,6 +109,12 @@ const ProfissionaisAdmin: React.FC = () => {
 
   return (
     <div className="p-6">
+      {loading && (
+        <div className="text-center py-8 text-blue-600 font-semibold">Carregando profissionais...</div>
+      )}
+      {error && (
+        <div className="text-center py-4 text-red-500 font-semibold">{error}</div>
+      )}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-blue-900">Gerenciamento de Profissionais</h1>
         <button 
