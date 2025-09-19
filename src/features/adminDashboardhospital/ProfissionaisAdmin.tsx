@@ -60,8 +60,8 @@ const ProfissionaisAdmin: React.FC = () => {
         const profissionaisFiltrados = data.filter((p: any) => {
           return unidadeAdmin && (p.unidade || "").trim().toLowerCase() === unidadeAdmin.trim().toLowerCase();
         });
-        setProfessionals(profissionaisFiltrados.map((p: any, idx: number) => ({
-          id: idx + 1,
+        setProfessionals(profissionaisFiltrados.map((p: any) => ({
+          id: p.id, // Usar o id real do banco
           name: p.nome ?? p.name,
           specialty: p.especialidade ?? p.specialty,
           status: p.status === 'aprovado' ? 'active' : 'pending',
@@ -129,6 +129,25 @@ const ProfissionaisAdmin: React.FC = () => {
       })
       .catch(() => {
         setError("Erro ao aprovar profissional.");
+      });
+  };
+
+  const handleRejectProfessional = (id: number) => {
+    // Rejeitar profissional via backend
+    fetch(`${apiHost}/profissionais/${id}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "rejeitado" })
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Erro ao rejeitar profissional.");
+        return res.json();
+      })
+      .then(() => {
+        setProfessionals(professionals.filter(prof => prof.id !== id));
+      })
+      .catch(() => {
+        setError("Erro ao rejeitar profissional.");
       });
   };
 
@@ -272,12 +291,20 @@ const ProfissionaisAdmin: React.FC = () => {
                           <h3 className="font-medium">{professional.name}</h3>
                           <p className="text-sm text-gray-600">{professional.specialty}</p>
                         </div>
-                        <button
-                          className="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700"
-                          onClick={() => handleAcceptProfessional(professional.id)}
-                        >
-                          Aceitar
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            className="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700"
+                            onClick={() => handleAcceptProfessional(professional.id)}
+                          >
+                            Aceitar
+                          </button>
+                          <button
+                            className="bg-red-600 text-white px-3 py-1 rounded-md text-sm hover:bg-red-700"
+                            onClick={() => handleRejectProfessional(professional.id)}
+                          >
+                            Rejeitar
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
