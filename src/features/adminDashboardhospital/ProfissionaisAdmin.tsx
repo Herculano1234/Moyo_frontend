@@ -25,15 +25,29 @@ const ProfissionaisAdmin: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
-  const unidadeHospitalar = "Hospital Central"; // Exemplo: defina o nome ou id real da unidade do admin logado
+  const [unidadeAdmin, setUnidadeAdmin] = useState<string>("");
   const apiHost = "https://moyo-backend.vercel.app";
+
+  React.useEffect(() => {
+    // Buscar unidade do admin logado do localStorage
+    let unidade = "";
+    try {
+      const adminRaw = localStorage.getItem("moyo-user");
+      if (adminRaw) {
+        const adminUser = JSON.parse(adminRaw);
+        unidade = adminUser.unidade || adminUser.hospital || adminUser.unidade_hospitalar || "";
+      }
+    } catch (e) {}
+    setUnidadeAdmin(unidade);
+    console.log("Unidade do admin logado:", unidade);
+  }, []);
 
   React.useEffect(() => {
     async function fetchProfessionals() {
       setLoading(true);
       setError("");
       try {
-        const response = await fetch(`${apiHost}/profissionais?unidade=${encodeURIComponent(unidadeHospitalar)}`);
+        const response = await fetch(`${apiHost}/profissionais`);
         if (!response.ok) {
           setError("Erro ao buscar profissionais.");
           setProfessionals([]);
@@ -41,15 +55,31 @@ const ProfissionaisAdmin: React.FC = () => {
           return;
         }
         const data = await response.json();
-        setProfessionals(data);
-      } catch {
+        console.log("Profissionais recebidos:", data);
+        // Filtrar profissionais pela unidade do admin logado
+        const profissionaisFiltrados = data.filter((p: any) => {
+          return unidadeAdmin && (p.unidade || "").trim().toLowerCase() === unidadeAdmin.trim().toLowerCase();
+        });
+        setProfessionals(profissionaisFiltrados.map((p: any, idx: number) => ({
+          id: idx + 1,
+          name: p.nome ?? p.name,
+          specialty: p.especialidade ?? p.specialty,
+          status: p.status === 'aprovado' ? 'active' : 'pending',
+          email: p.email,
+          phone: p.telefone ?? p.phone,
+          completedAppointments: p.completedAppointments || 0,
+          scheduledAppointments: p.scheduledAppointments || 0,
+          rating: p.rating || 0,
+          reviews: p.reviews || []
+        })));
+      } catch (err) {
         setError("Erro de conexão com o servidor.");
         setProfessionals([]);
       }
       setLoading(false);
     }
-    fetchProfessionals();
-  }, [unidadeHospitalar]);
+    if (unidadeAdmin) fetchProfessionals();
+  }, [unidadeAdmin]);
 
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -83,7 +113,7 @@ const ProfissionaisAdmin: React.FC = () => {
 
   const handleAcceptProfessional = (id: number) => {
     // Aprovar profissional via backend
-    fetch(`/profissionais/${id}/status`, {
+    fetch(`${apiHost}/profissionais/${id}/status`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "aprovado" })
