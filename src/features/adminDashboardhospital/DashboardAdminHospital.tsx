@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import ProfissionaisAdmin from "./ProfissionaisAdmin";
 import ExamesAdmin from "./ExamesAdmin";
-import Financas from "./Financas";
+import Financas from "./Especialidades";
 import Consult from "./Consult";
 import Definicoes from "./Definicoes";
 import Relatorio from "./Relatorio";
