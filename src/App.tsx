@@ -62,9 +62,9 @@ function PacienteLayout() {
 function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/" element={<RequireGuest><LandingPage /></RequireGuest>} />
+  <Route path="/login" element={<Login />} />
+  <Route path="/signup" element={<Signup />} />
+  <Route path="/" element={<LandingPage />} />
       {/* Rotas do Profissional */}
       <Route element={<RequireAuth perfil="profissional" />}> 
         <Route element={<ProfissionalLayout />}>
