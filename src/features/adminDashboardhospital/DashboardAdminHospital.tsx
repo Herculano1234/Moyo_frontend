@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import ProfissionaisAdmin from "./ProfissionaisAdmin";
-import ExamesAdmin from "./ExamesAdmin";
-import Financas from "./Financas";
+import ExamesAdmin from "./examesAdmin";
+import Financas from "./Especialidades";
 import Consult from "./Consult";
 import Definicoes from "./Definicoes";
 import Relatorio from "./Relatorio";
@@ -178,6 +178,14 @@ const DashboardAdminHospital: React.FC = () => {
     <div className="flex h-screen bg-blue-50">
       {/* Sidebar */}
       <div className="w-64 bg-blue-100 text-blue-900 flex flex-col shadow-lg">
+         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center space-x-2">
+            <div className="flex items-center mb-8 animate-fadeIn">
+              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mr-3 shadow-lg">
+                <i className="fas fa-heartbeat text-2xl text-[#DC2626] pulsing"></i>
+              </div>
+              <span className="text-3xl font-extrabold">Moyo</span>
+            </div>
+      </div>
         <div className="p-4 text-xl font-bold border-b border-blue-200 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />

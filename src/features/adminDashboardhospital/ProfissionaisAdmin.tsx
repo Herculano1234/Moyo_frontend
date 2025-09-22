@@ -22,67 +22,66 @@ interface Review {
 }
 
 const ProfissionaisAdmin: React.FC = () => {
-  const [professionals, setProfessionals] = useState<Professional[]>([
-    {
-      id: 1,
-      name: "Dra. Ana Silva",
-      specialty: "Cardiologia",
-      status: "active",
-      email: "ana.silva@hospital.com",
-      phone: "(11) 99999-9999",
-      completedAppointments: 142,
-      scheduledAppointments: 15,
-      rating: 4.8,
-      reviews: [
-        {
-          id: 1,
-          patientName: "Carlos Mendes",
-          rating: 5,
-          comment: "Excelente profissional, muito atenciosa e competente.",
-          date: "2023-10-15"
-        },
-        {
-          id: 2,
-          patientName: "Marina Oliveira",
-          rating: 4.5,
-          comment: "Boa médica, mas às vezes demora um pouco nas consultas.",
-          date: "2023-09-22"
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchPendingTerm, setSearchPendingTerm] = useState("");
+  const [error, setError] = useState<string>("");
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [unidadeAdmin, setUnidadeAdmin] = useState<string>("");
+  const apiHost = "https://moyo-backend.vercel.app";
+
+  React.useEffect(() => {
+    // Buscar unidade do admin logado do localStorage
+    let unidade = "";
+    try {
+      const adminRaw = localStorage.getItem("moyo-user");
+      if (adminRaw) {
+        const adminUser = JSON.parse(adminRaw);
+        unidade = adminUser.unidade || adminUser.hospital || adminUser.unidade_hospitalar || "";
+      }
+    } catch (e) {}
+    setUnidadeAdmin(unidade);
+    console.log("Unidade do admin logado:", unidade);
+  }, []);
+
+  React.useEffect(() => {
+    async function fetchProfessionals() {
+      setLoading(true);
+      setError("");
+      try {
+        const response = await fetch(`${apiHost}/profissionais`);
+        if (!response.ok) {
+          setError("Erro ao buscar profissionais.");
+          setProfessionals([]);
+          setLoading(false);
+          return;
         }
-      ]
-    },
-    {
-      id: 2,
-      name: "Dr. Roberto Alves",
-      specialty: "Ortopedia",
-      status: "active",
-      email: "roberto.alves@hospital.com",
-      phone: "(11) 98888-8888",
-      completedAppointments: 89,
-      scheduledAppointments: 8,
-      rating: 4.6,
-      reviews: [
-        {
-          id: 1,
-          patientName: "Paula Costa",
-          rating: 5,
-          comment: "Ótimo diagnóstico, resolveu meu problema rapidamente.",
-          date: "2023-10-10"
-        }
-      ]
-    },
-    {
-      id: 3,
-      name: "Dra. Carla Santos",
-      specialty: "Pediatria",
-      status: "pending",
-      email: "carla.santos@email.com",
-      phone: "(11) 97777-7777",
-      completedAppointments: 0,
-      scheduledAppointments: 0,
-      rating: 0,
-      reviews: []
+        const data = await response.json();
+        console.log("Profissionais recebidos:", data);
+        // Filtrar profissionais pela unidade do admin logado
+        const profissionaisFiltrados = data.filter((p: any) => {
+          return unidadeAdmin && (p.unidade || "").trim().toLowerCase() === unidadeAdmin.trim().toLowerCase();
+        });
+        setProfessionals(profissionaisFiltrados.map((p: any) => ({
+          id: p.id, // Usar o id real do banco
+          name: p.nome ?? p.name,
+          specialty: p.especialidade ?? p.specialty,
+          status: p.status === 'aprovado' ? 'active' : 'pending',
+          email: p.email,
+          phone: p.telefone ?? p.phone,
+          completedAppointments: p.completedAppointments || 0,
+          scheduledAppointments: p.scheduledAppointments || 0,
+          rating: p.rating || 0,
+          reviews: p.reviews || []
+        })));
+      } catch (err) {
+        setError("Erro de conexão com o servidor.");
+        setProfessionals([]);
+      }
+      setLoading(false);
     }
-  ]);
+    if (unidadeAdmin) fetchProfessionals();
+  }, [unidadeAdmin]);
 
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -115,9 +114,43 @@ const ProfissionaisAdmin: React.FC = () => {
   };
 
   const handleAcceptProfessional = (id: number) => {
-    setProfessionals(professionals.map(prof => 
-      prof.id === id ? { ...prof, status: "active" } : prof
-    ));
+    // Aprovar profissional via backend
+    fetch(`${apiHost}/profissionais/${id}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "aprovado" })
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Erro ao aprovar profissional.");
+        return res.json();
+      })
+      .then(() => {
+        setProfessionals(professionals.map(prof =>
+          prof.id === id ? { ...prof, status: "active" } : prof
+        ));
+      })
+      .catch(() => {
+        setError("Erro ao aprovar profissional.");
+      });
+  };
+
+  const handleRejectProfessional = (id: number) => {
+    // Rejeitar profissional via backend
+    fetch(`${apiHost}/profissionais/${id}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "rejeitado" })
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Erro ao rejeitar profissional.");
+        return res.json();
+      })
+      .then(() => {
+        setProfessionals(professionals.filter(prof => prof.id !== id));
+      })
+      .catch(() => {
+        setError("Erro ao rejeitar profissional.");
+      });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -125,21 +158,62 @@ const ProfissionaisAdmin: React.FC = () => {
     setNewProfessional({ ...newProfessional, [name]: value });
   };
 
+  // Filtrar profissionais aprovados para a lista principal
+  const profissionaisAprovados = professionals.filter(p => p.status === "active");
+  // Filtrar pelo termo de pesquisa
+  const profissionaisFiltrados = profissionaisAprovados.filter(p =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.specialty.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+      
+      {loading && (
+        <div className="text-center py-8 text-blue-600 font-semibold">Carregando profissionais...</div>
+      )}
+      {error && (
+        <div className="text-center py-4 text-red-500 font-semibold">{error}</div>
+      )}
+      <div className="flex flex-col lg:flex-row justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold text-blue-900">Gerenciamento de Profissionais</h1>
-        <button 
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
-          onClick={() => setShowAddForm(true)}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-          </svg>
-          Adicionar Profissional
-        </button>
       </div>
-
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white rounded-xl p-4 shadow-md flex items-center">
+                <div className="rounded-full bg-blue-100 p-3 mr-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-sm">Total de profissionais</p>
+                  <p className="text-xl font-bold">{professionals.length}</p>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl p-4 shadow-md flex items-center">
+                <div className="rounded-full bg-green-100 p-3 mr-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-sm">Profissionais Ativos</p>
+                  <p className="text-xl font-bold">{professionals.filter(p => p.status === "active").length}</p>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl p-4 shadow-md flex items-center">
+                <div className="rounded-full bg-purple-100 p-3 mr-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-sm">Profissionais pendentes</p>
+                  <p className="text-xl font-bold">{professionals.filter(p => p.status === "pending").length}</p>
+                </div>
+              </div></div>
       {showAddForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-96">
@@ -208,45 +282,66 @@ const ProfissionaisAdmin: React.FC = () => {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl shadow-md p-4 mb-4">
             <h2 className="text-lg font-semibold text-blue-900 mb-4">Lista de Profissionais</h2>
-            <div className="space-y-3">
-              {professionals.map(professional => (
-                <div
-                  key={professional.id}
-                  className={`p-3 rounded-lg cursor-pointer transition-all ${
-                    selectedProfessional?.id === professional.id
-                      ? "bg-blue-100 border-l-4 border-blue-600"
-                      : "bg-gray-50 hover:bg-gray-100"
-                  }`}
-                  onClick={() => setSelectedProfessional(professional)}
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-medium">{professional.name}</h3>
-                      <p className="text-sm text-gray-600">{professional.specialty}</p>
+            <input
+              type="text"
+              placeholder="Pesquisar por nome ou especialidade..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="border border-gray-300 rounded-md px-3 py-2 w-full mb-3"
+            />
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+              {profissionaisFiltrados.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">Nenhum profissional encontrado</p>
+              ) : (
+                profissionaisFiltrados.map(professional => (
+                  <div
+                    key={professional.id}
+                    className={`p-3 rounded-lg cursor-pointer transition-all ${
+                      selectedProfessional?.id === professional.id
+                        ? "bg-blue-100 border-l-4 border-blue-600"
+                        : "bg-gray-50 hover:bg-gray-100"
+                    }`}
+                    onClick={() => setSelectedProfessional(professional)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="font-medium">{professional.name}</h3>
+                        <p className="text-sm text-gray-600">{professional.specialty}</p>
+                      </div>
+                      <span
+                        className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800"
+                      >
+                        Ativo
+                      </span>
                     </div>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        professional.status === "active"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {professional.status === "active" ? "Ativo" : "Pendente"}
-                    </span>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-md p-4">
             <h2 className="text-lg font-semibold text-blue-900 mb-4">Cadastros Pendentes</h2>
-            {professionals.filter(p => p.status === "pending").length === 0 ? (
+            <input
+              type="text"
+              placeholder="Pesquisar pendentes por nome ou especialidade..."
+              value={searchPendingTerm}
+              onChange={e => setSearchPendingTerm(e.target.value)}
+              className="border border-gray-300 rounded-md px-3 py-2 w-full mb-3"
+            />
+            {professionals.filter(p => p.status === "pending").filter(p =>
+              p.name.toLowerCase().includes(searchPendingTerm.toLowerCase()) ||
+              p.specialty.toLowerCase().includes(searchPendingTerm.toLowerCase())
+            ).length === 0 ? (
               <p className="text-gray-500 text-center py-4">Nenhum cadastro pendente</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                 {professionals
                   .filter(p => p.status === "pending")
+                  .filter(p =>
+                    p.name.toLowerCase().includes(searchPendingTerm.toLowerCase()) ||
+                    p.specialty.toLowerCase().includes(searchPendingTerm.toLowerCase())
+                  )
                   .map(professional => (
                     <div key={professional.id} className="p-3 bg-yellow-50 rounded-lg">
                       <div className="flex justify-between items-center">
@@ -254,12 +349,20 @@ const ProfissionaisAdmin: React.FC = () => {
                           <h3 className="font-medium">{professional.name}</h3>
                           <p className="text-sm text-gray-600">{professional.specialty}</p>
                         </div>
-                        <button
-                          className="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700"
-                          onClick={() => handleAcceptProfessional(professional.id)}
-                        >
-                          Aceitar
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            className="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700"
+                            onClick={() => handleAcceptProfessional(professional.id)}
+                          >
+                            Aceitar
+                          </button>
+                          <button
+                            className="bg-red-600 text-white px-3 py-1 rounded-md text-sm hover:bg-red-700"
+                            onClick={() => handleRejectProfessional(professional.id)}
+                          >
+                            Rejeitar
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

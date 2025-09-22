@@ -199,6 +199,12 @@ export default function Login() {
       });
       if (profResp.ok) {
         const data = await profResp.json();
+        // Bloqueio de profissionais não aprovados
+        if (data.status && data.status !== "aprovado" && data.status !== "active") {
+          setLoading(false);
+          setError("Seu perfil ainda não está aprovado. Entre em contato com o administrador do hospital para aprovação do seu cadastro.");
+          return;
+        }
         localStorage.setItem("moyo-auth", "true");
         localStorage.setItem("moyo-perfil", "profissional");
         localStorage.setItem("moyo-user", JSON.stringify(data));
