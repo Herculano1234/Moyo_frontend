@@ -232,7 +232,7 @@ const ExamesAdmin: React.FC = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold mb-6 text-blue-800">Gerenciamento de Exames</h1>
       
-      {/* Cards de Estatísticas */}
+      {/*------------- Cards de Estatísticas ------- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">Total de Exames</h3>
