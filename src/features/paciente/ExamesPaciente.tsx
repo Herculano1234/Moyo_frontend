@@ -54,8 +54,8 @@ const userIcon = new L.Icon({
 });
 
 // Interfaces
-// Nova interface Consulta alinhada ao backend
-interface Consulta {
+// Nova interface Exame alinhada ao backend
+interface Exame {
   id: number;
   paciente_id: number;
   profissional_id: number | null;
@@ -151,31 +151,31 @@ const perguntasTriagem = [
 // Funções de armazenamento e integração com API
 const apiHost = "moyo-backend.vercel.app";
 
-async function getConsultasAPI(pacienteId: string): Promise<Consulta[]> {
+async function getExamesAPI(pacienteId: string): Promise<Exame[]> {
   try {
-    const resp = await fetch(`http://${apiHost}/pacientes/${pacienteId}/consultas`);
-    if (!resp.ok) throw new Error('Erro ao buscar consultas');
+    const resp = await fetch(`http://${apiHost}/pacientes/${pacienteId}/exames`);
+    if (!resp.ok) throw new Error('Erro ao buscar exames');
     return await resp.json();
   } catch {
     return [];
   }
 }
 
-// Função para salvar consulta (status sempre 'pendente' ao criar)
-async function saveConsultaAPI(pacienteId: number, consulta: Partial<Consulta>): Promise<Consulta|null> {
+// Função para salvar exame (status sempre 'pendente' ao criar)
+async function saveExameAPI(pacienteId: number, exame: Partial<Exame>): Promise<Exame|null> {
   try {
     const payload = {
-      data_hora: consulta.data_hora, // já no formato ISO
+      data_hora: exame.data_hora, // já no formato ISO
       status: 'pendente', // sempre pendente ao criar
-      prioridade: consulta.prioridade || null,
-      local: consulta.local || null
+      prioridade: exame.prioridade || null,
+      local: exame.local || null
     };
-    const resp = await fetch(`http://${apiHost}/pacientes/${pacienteId}/consultas`, {
+    const resp = await fetch(`http://${apiHost}/pacientes/${pacienteId}/exames`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if (!resp.ok) throw new Error('Erro ao cadastrar consulta');
+    if (!resp.ok) throw new Error('Erro ao cadastrar exame');
     return await resp.json();
   } catch {
     return null;
@@ -990,33 +990,33 @@ const TriagemModal: React.FC<TriagemModalProps> = ({
   );
 };
 
-// Componente ConsultaCard
-interface ConsultaCardProps {
-  consulta: Consulta;
+// Componente ExameCard
+interface ExameCardProps {
+  exame: Exame;
   onCancel: (id: number) => void;
   loading: boolean;
 }
-const ConsultaCard: React.FC<ConsultaCardProps> = ({ consulta, onCancel, loading }) => {
+const ExameCard: React.FC<ExameCardProps> = ({ exame, onCancel, loading }) => {
   const [expanded, setExpanded] = useState(false);
   
   return (
     <div className={`border rounded-xl p-4 transition-all duration-300 ${expanded ? 'bg-white shadow-lg' : 'bg-gray-50'}`}>
       <div className="flex justify-between items-start">
         <div>
-          <div className="font-bold text-moyo-primary">{consulta.status.charAt(0).toUpperCase() + consulta.status.slice(1)}</div>
+          <div className="font-bold text-moyo-primary">{exame.status.charAt(0).toUpperCase() + exame.status.slice(1)}</div>
           <div className="text-sm text-gray-600 mt-1">
-            {new Date(consulta.data_hora).toLocaleString('pt-BR', {
+            {new Date(exame.data_hora).toLocaleString('pt-BR', {
               weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
             })}
           </div>
-          <div className="text-sm font-medium mt-1">{consulta.local || 'Local não informado'}</div>
-          <div className="text-sm mt-1">Prioridade: {consulta.prioridade || 'Não definida'}</div>
-          <div className="text-sm mt-1">Profissional: {consulta.profissional_id ? consulta.profissional_id : 'A ser definido'}</div>
+          <div className="text-sm font-medium mt-1">{exame.local || 'Local não informado'}</div>
+          <div className="text-sm mt-1">Prioridade: {exame.prioridade || 'Não definida'}</div>
+          <div className="text-sm mt-1">Profissional: {exame.profissional_id ? exame.profissional_id : 'A ser definido'}</div>
         </div>
         <div className="flex items-center gap-2">
-          {consulta.status === "pendente" && (
+          {exame.status === "pendente" && (
             <button
-              onClick={() => onCancel(consulta.id)}
+              onClick={() => onCancel(exame.id)}
               className="text-red-500 hover:text-red-700 text-sm font-medium px-3 py-1 rounded-lg bg-red-50 hover:bg-red-100 transition"
               disabled={loading}
             >
@@ -1044,17 +1044,17 @@ const ConsultaCard: React.FC<ConsultaCardProps> = ({ consulta, onCancel, loading
         <div className="mt-4 pt-4 border-t border-gray-100 animate-fadein">
           <div className="flex items-center mb-2">
             <span className={`px-2 py-1 rounded text-xs font-medium ${
-              consulta.status === "pendente" 
+              exame.status === "pendente" 
                 ? "bg-yellow-100 text-yellow-800" 
-                : consulta.status === "concluida"
+                : exame.status === "concluida"
                   ? "bg-green-100 text-green-800"
                   : "bg-red-100 text-red-800"
             }`}>
-              {consulta.status.charAt(0).toUpperCase() + consulta.status.slice(1)}
+              {exame.status.charAt(0).toUpperCase() + exame.status.slice(1)}
             </span>
-            {consulta.prioridade && (
+            {exame.prioridade && (
               <span className="ml-2 px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                Prioridade: {consulta.prioridade}
+                Prioridade: {exame.prioridade}
               </span>
             )}
           </div>
@@ -1065,7 +1065,7 @@ const ConsultaCard: React.FC<ConsultaCardProps> = ({ consulta, onCancel, loading
 };
 
 // Componente principal
-export default function ConsultasPaciente() {
+export default function ExamesPaciente() {
   // Estados
   const [especialidade, setEspecialidade] = useState("");
   const [data, setData] = useState("");
@@ -1073,7 +1073,7 @@ export default function ConsultasPaciente() {
   const [agendado, setAgendado] = useState(false);
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
-  const [consultas, setConsultas] = useState<Consulta[]>([]);
+  const [exames, setExames] = useState<Exame[]>([]);
   const [filtroData, setFiltroData] = useState<string>("");
   const [filtroPrioridade, setFiltroPrioridade] = useState<string>("");
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -1095,7 +1095,7 @@ export default function ConsultasPaciente() {
       } catch {}
     }
     if (pacienteId) {
-      getConsultasAPI(pacienteId).then(setConsultas);
+      getExamesAPI(pacienteId).then(setExames);
     }
     obterLocalizacaoUsuario();
     // Buscar hospitais do backend
@@ -1121,16 +1121,10 @@ export default function ConsultasPaciente() {
     }
   }, []);
 
-  // Atualizar unidades filtradas quando especialidade mudar
+  // Exibir todas as unidades hospitalares disponíveis (não filtrar por especialidade)
   useEffect(() => {
-    if (especialidade && userLocation) {
-      const unidadesComEspecialidade = unidadesHospitalares.filter((unidade: HospitalUnit) =>
-        parseEspecialidades(unidade.especialidades).some((esp: string) =>
-          esp.toLowerCase().includes(especialidade.toLowerCase())
-        )
-      );
-
-      const unidadesComDistancia = unidadesComEspecialidade.map((unidade: HospitalUnit) => ({
+    if (userLocation) {
+      const unidadesComDistancia = unidadesHospitalares.map((unidade: HospitalUnit) => ({
         ...unidade,
         distancia: calcularDistancia(
           userLocation[0],
@@ -1139,12 +1133,11 @@ export default function ConsultasPaciente() {
           unidade.lng
         )
       })).sort((a: HospitalUnit, b: HospitalUnit) => (a.distancia || Infinity) - (b.distancia || Infinity));
-
       setUnidadesFiltradas(unidadesComDistancia);
     } else {
-      setUnidadesFiltradas([]);
+      setUnidadesFiltradas(unidadesHospitalares);
     }
-  }, [especialidade, userLocation, unidadesHospitalares]);
+  }, [userLocation, unidadesHospitalares]);
 
   // Atualizar mapa quando unidade for selecionada
   useEffect(() => {
@@ -1175,11 +1168,11 @@ export default function ConsultasPaciente() {
     setUnidadeSelecionada(id);
   };
 
-  // Função para filtrar consultas por data e prioridade
-  const filtrarConsultas = (consultas: Consulta[], filtroData: string, filtroPrioridade: string) => {
-    return consultas.filter(c =>
-      (!filtroData || c.data_hora.startsWith(filtroData)) &&
-      (!filtroPrioridade || (c.prioridade || '').toLowerCase().includes(filtroPrioridade.toLowerCase()))
+  // Função para filtrar exames por data e prioridade
+  const filtrarExames = (exames: Exame[], filtroData: string, filtroPrioridade: string) => {
+    return exames.filter(e =>
+      (!filtroData || e.data_hora.startsWith(filtroData)) &&
+      (!filtroPrioridade || (e.prioridade || '').toLowerCase().includes(filtroPrioridade.toLowerCase()))
     );
   };
 
@@ -1192,15 +1185,15 @@ export default function ConsultasPaciente() {
       const user = localStorage.getItem("moyo-user");
       if (!user) return;
       const pacienteData = JSON.parse(user);
-      // Montar consulta
-      const novaConsulta: Partial<Consulta> = {
+      // Montar exame
+      const novoExame: Partial<Exame> = {
         data_hora: data ? (data.length === 10 ? data + 'T08:00:00' : data) : new Date().toISOString(),
-        status: 'agendada',
+        status: 'agendado',
         prioridade: urgencia.nivel,
         local: unidadeSelecionada ? (unidadesHospitalares.find((u: HospitalUnit) => u.id === unidadeSelecionada)?.nome || null) : null
       };
-      saveConsultaAPI(Number(pacienteData.id), novaConsulta).then((consultaSalva) => {
-        if (consultaSalva) setConsultas([consultaSalva, ...consultas]);
+      saveExameAPI(Number(pacienteData.id), novoExame).then((exameSalvo) => {
+        if (exameSalvo) setExames([exameSalvo, ...exames]);
         setAgendado(true);
         setEspecialidade("");
         setData("");
@@ -1213,13 +1206,13 @@ export default function ConsultasPaciente() {
     }, 1500);
   };
 
-  const handleCancelarConsulta = (id: number) => {
+  const handleCancelarExame = (id: number) => {
     setLoading(true);
     setTimeout(() => {
-      const novas = consultas.map(c =>
-        c.id === id ? { ...c, status: "cancelada" } : c
+      const novas = exames.map(e =>
+        e.id === id ? { ...e, status: "cancelada" } : e
       );
-      setConsultas(novas);
+      setExames(novas);
       setLoading(false);
     }, 1000);
   };
@@ -1232,9 +1225,9 @@ export default function ConsultasPaciente() {
     setEtapaAgendamento(etapa);
   };
 
-  // Filtrar consultas
-  const pendentes = filtrarConsultas(consultas.filter(c => c.status === 'pendente'), filtroData, filtroPrioridade);
-  const historico = filtrarConsultas(consultas.filter(c => c.status !== 'pendente'), filtroData, filtroPrioridade);
+  // Filtrar exames
+  const pendentes = filtrarExames(exames.filter(e => e.status === 'pendente'), filtroData, filtroPrioridade);
+  const historico = filtrarExames(exames.filter(e => e.status !== 'pendente'), filtroData, filtroPrioridade);
 
   // Função para exibir perguntas e respostas coloridas
   function renderPerguntasRespostas(triagem: Record<string, string | string[]>) {
@@ -1266,10 +1259,10 @@ export default function ConsultasPaciente() {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          Consultas
+          Exames
         </h2>
         <span className="text-base md:text-lg font-semibold mt-2 md:mt-0 animate-fadein">
-          Agendamento Inteligente
+          Agendamento de Exames
         </span>
       </header>
 
@@ -1310,7 +1303,7 @@ export default function ConsultasPaciente() {
         {/* Painel Esquerdo (Agendamento) */}
         <div className="bg-white rounded-2xl shadow-xl p-6 animate-popin">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-moyo-primary">Agendar Nova Consulta</h3>
+            <h3 className="text-xl font-bold text-moyo-primary">Agendar Novo Exame</h3>
             <div className="flex items-center">
               {[1, 2, 3].map(etapa => (
                 <React.Fragment key={etapa}>
@@ -1381,25 +1374,25 @@ export default function ConsultasPaciente() {
         </div>
       </div>
 
-      {/* Consultas Pendentes */}
+      {/* Exames Pendentes */}
       <div className="px-4 md:px-8 pb-8">
         <div className="bg-white rounded-2xl shadow-xl p-6 animate-popin">
-          <h3 className="text-xl font-bold text-moyo-primary mb-6">Consultas Pendentes</h3>
+          <h3 className="text-xl font-bold text-moyo-primary mb-6">Exames Pendentes</h3>
           
           {pendentes.length === 0 ? (
             <div className="text-center py-12 text-gray-500 animate-fadein">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
-              Nenhuma consulta pendente
+              Nenhum exame pendente
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fadein">
-              {pendentes.map(consulta => (
-                <ConsultaCard 
-                  key={consulta.id} 
-                  consulta={consulta} 
-                  onCancel={handleCancelarConsulta}
+              {pendentes.map(exame => (
+                <ExameCard 
+                  key={exame.id} 
+                  exame={exame} 
+                  onCancel={handleCancelarExame}
                   loading={loading}
                 />
               ))}
@@ -1408,25 +1401,25 @@ export default function ConsultasPaciente() {
         </div>
       </div>
 
-      {/* Histórico de Consultas */}
+      {/* Histórico de Exames */}
       <div className="px-4 md:px-8 pb-8">
         <div className="bg-white rounded-2xl shadow-xl p-6 animate-popin">
-          <h3 className="text-xl font-bold text-moyo-primary mb-6">Histórico de Consultas</h3>
+          <h3 className="text-xl font-bold text-moyo-primary mb-6">Histórico de Exames</h3>
           
           {historico.length === 0 ? (
             <div className="text-center py-12 text-gray-500 animate-fadein">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
-              Nenhum histórico de consultas
+              Nenhum histórico de exames
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 animate-fadein">
-              {historico.map(consulta => (
-                <ConsultaCard 
-                  key={consulta.id} 
-                  consulta={consulta} 
-                  onCancel={handleCancelarConsulta}
+              {historico.map(exame => (
+                <ExameCard 
+                  key={exame.id} 
+                  exame={exame} 
+                  onCancel={handleCancelarExame}
                   loading={loading}
                 />
               ))}
@@ -1450,7 +1443,7 @@ export default function ConsultasPaciente() {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
-          <span>Consulta agendada com sucesso!</span>
+          <span>Exame agendado com sucesso!</span>
         </div>
       )}
     </div>
