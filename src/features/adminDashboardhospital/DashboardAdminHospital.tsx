@@ -57,19 +57,73 @@ const DashboardAdminHospital: React.FC = () => {
   const fotoDono = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80";
 
   const renderContent = () => {
+    // Add back button for non-dashboard tabs
+    const BackButton = () => (
+      <button
+        onClick={() => setActiveTab("dashboard")}
+        className="mb-4 flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          className="h-5 w-5 mr-2" 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor"
+        >
+          <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth={2} 
+            d="M10 19l-7-7m0 0l7-7m-7 7h18" 
+          />
+        </svg>
+        Voltar ao Dashboard
+      </button>
+    );
+
     switch (activeTab) {
       case "profissionais":
-        return <ProfissionaisAdmin />;
+        return (
+          <div className="p-6">
+            <BackButton />
+            <ProfissionaisAdmin />
+          </div>
+        );
       case "exames":
-        return <ExamesAdmin />;
+        return (
+          <div className="p-6">
+            <BackButton />
+            <ExamesAdmin />
+          </div>
+        );
       case "financas":
-        return <Financas />;
+        return (
+          <div className="p-6">
+            <BackButton />
+            <Financas />
+          </div>
+        );
       case "consult":
-        return <Consult />;
+        return (
+          <div className="p-6">
+            <BackButton />
+            <Consult />
+          </div>
+        );
       case "definicoes":
-        return <Definicoes />;
+        return (
+          <div className="p-6">
+            <BackButton />
+            <Definicoes />
+          </div>
+        );
       case "relatorio":
-        return <Relatorio />;
+        return (
+          <div className="p-6">
+            <BackButton />
+            <Relatorio />
+          </div>
+        );
       default:
         return (
           <div className="p-6">
@@ -251,13 +305,15 @@ const DashboardAdminHospital: React.FC = () => {
           
         </nav>
         
+        {/* User Profile Section */}
         <div className="p-4 border-t border-blue-200 flex items-center">
           <img src={fotoDono} alt="Usuário" className="h-10 w-10 rounded-full object-cover mr-3" />
-          <div>
+          <div className="flex flex-col">
             <p className="font-medium">{nomeDono}</p>
             <p className="text-sm text-blue-600">Administrador</p>
           </div>
         </div>
+
       </div>
 
       {/* Main Content */}

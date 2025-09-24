@@ -1,8 +1,4 @@
 import React, { useState, useEffect } from "react";
-<<<<<<< HEAD
-import { Chart } from 'react-chartjs-2';
-=======
->>>>>>> edf5d5a61c13bdaede48ba25ba806c9e9e3619d9
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,11 +8,9 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-<<<<<<< HEAD
-=======
 import { Chart } from 'react-chartjs-2';
->>>>>>> edf5d5a61c13bdaede48ba25ba806c9e9e3619d9
 
+// Registrar componentes do ChartJS
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -26,56 +20,32 @@ ChartJS.register(
   Legend
 );
 
-<<<<<<< HEAD
-interface Exam {
-  id: number;
-  nome: string;
-  disponivel: boolean;
-  profissional_id?: number;
-  paciente_id?: number;
-  hospital_id: number;
-  data_hora: string;
-  status: string;
-  resultado?: string;
-  observacoes?: string;
-  criado_em: string;
-  doneCount: number; // Add this line
-}
-
-=======
->>>>>>> edf5d5a61c13bdaede48ba25ba806c9e9e3619d9
 interface Doctor {
   id: number;
   nome: string;
   especialidade: string;
 }
 
-<<<<<<< HEAD
-=======
 interface Exam {
   id: number;
-  name: string;
-  available: boolean;
+  nome: string;
+  disponivel: boolean;
   doneCount?: number;
   profissional_id?: number;
   paciente_id?: number;
-  data_hora?: string;
-  status?: string;
+  data_hora: string; // Changed from optional to required
+  status: string; // Changed from optional to required
+  hospital_id: number;
+  resultado?: string;
+  observacoes?: string;
 }
 
->>>>>>> edf5d5a61c13bdaede48ba25ba806c9e9e3619d9
 const ExamesAdmin: React.FC = () => {
   const [addExamLoading, setAddExamLoading] = useState(false);
   const [addExamMessage, setAddExamMessage] = useState("");
   const [exams, setExams] = useState<Exam[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
-<<<<<<< HEAD
-  const [error, setError] = useState<string | null>(null);
-  const [newExamName, setNewExamName] = useState("");
-  const [chartData, setChartData] = useState<any>(null);
-  const hospitalId = localStorage.getItem('moyo-hospital-id');
-=======
   // Buscar nome/unidade do hospital do admin logado
   const adminRaw = localStorage.getItem("moyo-user");
   let unidadeHospital = "";
@@ -85,28 +55,11 @@ const ExamesAdmin: React.FC = () => {
       unidadeHospital = adminUser.unidade || adminUser.hospital || adminUser.unidade_hospitalar || "";
     } catch {}
   }
->>>>>>> edf5d5a61c13bdaede48ba25ba806c9e9e3619d9
 
   // Buscar exames e médicos do banco de dados
   useEffect(() => {
     const fetchData = async () => {
       try {
-<<<<<<< HEAD
-        const [examsResponse, doctorsResponse] = await Promise.all([
-          fetch(`${process.env.REACT_APP_API_URL}/api/exames/hospital/${hospitalId}`),
-          fetch(`${process.env.REACT_APP_API_URL}/api/profissionais/hospital/${hospitalId}`)
-        ]);
-
-        if (!examsResponse.ok || !doctorsResponse.ok) {
-          throw new Error('Erro ao buscar dados');
-        }
-
-        const examsData = await examsResponse.json();
-        const doctorsData = await doctorsResponse.json();
-
-        setExams(examsData);
-        setDoctors(doctorsData);
-=======
         // Buscar exames do catálogo do hospital
         const examsResponse = await fetch(`https://moyo-backend.vercel.app/exames-catalogo?unidade=${encodeURIComponent(unidadeHospital)}`);
         const examsDataRaw = await examsResponse.json();
@@ -116,40 +69,33 @@ const ExamesAdmin: React.FC = () => {
 
         setExams(examsDataRaw.map((e: any) => ({
           id: e.id,
-          name: e.tipo,
-          available: e.disponivel ?? true,
+          nome: e.tipo,
+          disponivel: e.disponivel ?? true,
           doneCount: 0,
           profissional_id: undefined,
           paciente_id: undefined,
           data_hora: undefined,
-          status: undefined
+          status: undefined,
+          hospital_id: e.hospital_id,
+          resultado: e.resultado,
+          observacoes: e.observacoes
         })));
         setDoctors(doctorsDataRaw.map((d: any) => ({
           id: d.id,
           nome: d.nome,
           especialidade: d.especialidade
         })));
->>>>>>> edf5d5a61c13bdaede48ba25ba806c9e9e3619d9
       } catch (error) {
-        console.error('Erro:', error);
-        setError('Erro ao carregar dados');
+        console.error('Erro ao buscar dados:', error);
       } finally {
         setLoading(false);
       }
     };
-<<<<<<< HEAD
-
-    if (hospitalId) {
-      fetchData();
-    }
-  }, [hospitalId]);
-=======
     fetchData();
   }, [unidadeHospital]);
   
   const [newExamName, setNewExamName] = useState("");
   const [chartData, setChartData] = useState<any>(null);
->>>>>>> edf5d5a61c13bdaede48ba25ba806c9e9e3619d9
 
   // Calcular totais
   const totalExams = exams.length;
@@ -190,14 +136,9 @@ const ExamesAdmin: React.FC = () => {
 
   // Adicionar novo exame
   const handleAddExam = async () => {
-<<<<<<< HEAD
-    if (!newExamName.trim()) return;
-
-=======
     if (newExamName.trim() === "") return;
     setAddExamLoading(true);
     setAddExamMessage("");
->>>>>>> edf5d5a61c13bdaede48ba25ba806c9e9e3619d9
     try {
       const response = await fetch(`https://moyo-backend.vercel.app/exames-catalogo`, {
         method: 'POST',
@@ -207,17 +148,6 @@ const ExamesAdmin: React.FC = () => {
         body: JSON.stringify({
           tipo: newExamName,
           disponivel: true,
-<<<<<<< HEAD
-          hospital_id: hospitalId,
-          data_hora: new Date().toISOString(),
-          status: 'disponivel',
-          doneCount: 0 // Add this line
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Erro ao adicionar exame');
-=======
           unidade: unidadeHospital
         })
       });
@@ -225,32 +155,25 @@ const ExamesAdmin: React.FC = () => {
         const newExam = await response.json();
         setExams([...exams, {
           id: newExam.id,
-          name: newExam.tipo,
-          available: newExam.disponivel ?? true,
+          nome: newExam.tipo,
+          disponivel: newExam.disponivel ?? true,
           doneCount: 0,
           profissional_id: undefined,
           paciente_id: undefined,
           data_hora: undefined,
-          status: undefined
+          status: undefined,
+          hospital_id: newExam.hospital_id,
+          resultado: newExam.resultado,
+          observacoes: newExam.observacoes
         }]);
         setNewExamName("");
         setAddExamMessage("Exame adicionado com sucesso!");
       } else {
         setAddExamMessage("Erro ao adicionar exame.");
->>>>>>> edf5d5a61c13bdaede48ba25ba806c9e9e3619d9
       }
-
-      const newExam = await response.json();
-      setExams([...exams, newExam]);
-      setNewExamName('');
     } catch (error) {
-<<<<<<< HEAD
-      console.error('Erro:', error);
-      setError('Erro ao adicionar exame');
-=======
       setAddExamMessage("Erro ao adicionar exame.");
       console.error('Erro ao adicionar exame:', error);
->>>>>>> edf5d5a61c13bdaede48ba25ba806c9e9e3619d9
     }
     setAddExamLoading(false);
   };
@@ -268,46 +191,17 @@ const ExamesAdmin: React.FC = () => {
           disponivel: !exam?.disponivel
         })
       });
-<<<<<<< HEAD
-
-      if (!response.ok) {
-        throw new Error('Erro ao atualizar exame');
-=======
       if (response.ok) {
         setExams(exams.map(exam => 
-          exam.id === id ? { ...exam, available: !exam.available } : exam
+          exam.id === id ? { ...exam, disponivel: !exam.disponivel } : exam
         ));
->>>>>>> edf5d5a61c13bdaede48ba25ba806c9e9e3619d9
       }
-
-      setExams(exams.map(exam => 
-        exam.id === id ? { ...exam, disponivel: !exam.disponivel } : exam
-      ));
     } catch (error) {
-      console.error('Erro:', error);
-      setError('Erro ao atualizar exame');
+      console.error('Erro ao atualizar disponibilidade:', error);
     }
   };
 
-  // Excluir exame
-  const deleteExam = async (id: number) => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/exames/${id}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        throw new Error('Erro ao deletar exame');
-      }
-
-      setExams(exams.filter(exam => exam.id !== id));
-    } catch (error) {
-      console.error('Erro:', error);
-      setError('Erro ao deletar exame');
-    }
-  };
-
-  // Atribuir exame a médico
+  // Atribuir exame a um médico
   const assignExamToDoctor = async (examId: number, doctorId: number) => {
     try {
       const response = await fetch(`https://moyo-backend.vercel.app/exames/${examId}`, {
@@ -319,24 +213,16 @@ const ExamesAdmin: React.FC = () => {
           profissional_id: doctorId
         })
       });
-<<<<<<< HEAD
-
-      if (!response.ok) {
-        throw new Error('Erro ao atribuir exame ao médico');
-=======
       if (response.ok) {
         setExams(exams.map(exam => 
           exam.id === examId ? { ...exam, profissional_id: doctorId } : exam
         ));
->>>>>>> edf5d5a61c13bdaede48ba25ba806c9e9e3619d9
       }
+    } catch (error) {
+      console.error('Erro ao atribuir exame:', error);
+    }
+  };
 
-<<<<<<< HEAD
-      const updatedExam = await response.json();
-      setExams(exams.map(exam => 
-        exam.id === examId ? { ...exam, profissional_id: doctorId } : exam
-      ));
-=======
   // Excluir exame
   const deleteExam = async (id: number) => {
     try {
@@ -346,10 +232,8 @@ const ExamesAdmin: React.FC = () => {
       if (response.ok) {
         setExams(exams.filter(exam => exam.id !== id));
       }
->>>>>>> edf5d5a61c13bdaede48ba25ba806c9e9e3619d9
     } catch (error) {
-      console.error('Erro:', error);
-      setError('Erro ao atribuir exame ao médico');
+      console.error('Erro ao excluir exame:', error);
     }
   };
 
@@ -357,7 +241,7 @@ const ExamesAdmin: React.FC = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold mb-6 text-blue-800">Gerenciamento de Exames</h1>
       
-      {/* Cards de Estatísticas */}
+      {/*------------- Cards de Estatísticas ------- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">Total de Exames</h3>

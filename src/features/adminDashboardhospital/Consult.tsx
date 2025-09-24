@@ -1,265 +1,231 @@
 import React, { useState, useEffect } from "react";
 
-interface TimeSlot {
+const apiHost = "https://moyo-backend.vercel.app";
+
+interface HorarioConsulta {
   id: number;
-  time: string;
-  professionals?: number;
-  rooms?: number;
-  patientsPerSlot: number;
-  type: 'consultation' | 'exam';
+  horario: string;
 }
 
 const Consult: React.FC = () => {
-  const [consultationSlots, setConsultationSlots] = useState<TimeSlot[]>([
-    { id: 1, time: "08:00 - 09:00", professionals: 3, patientsPerSlot: 15, type: 'consultation' },
-    { id: 2, time: "09:00 - 10:00", professionals: 4, patientsPerSlot: 20, type: 'consultation' },
-    { id: 3, time: "10:00 - 11:00", professionals: 2, patientsPerSlot: 10, type: 'consultation' },
-  ]);
-  
-  const [examSlots, setExamSlots] = useState<TimeSlot[]>([
-    { id: 4, time: "08:00 - 09:00", rooms: 2, patientsPerSlot: 8, type: 'exam' },
-    { id: 5, time: "10:00 - 11:00", rooms: 3, patientsPerSlot: 12, type: 'exam' },
-    { id: 6, time: "14:00 - 15:00", rooms: 1, patientsPerSlot: 4, type: 'exam' },
-  ]);
-  
-  const [newConsultation, setNewConsultation] = useState({
-    time: "",
-    professionals: 1,
-    patientsPerSlot: 1
-  });
-  
-  const [newExam, setNewExam] = useState({
-    time: "",
-    rooms: 1,
-    patientsPerSlot: 1
-  });
-  
-  const [activeTab, setActiveTab] = useState<'consultations' | 'exams'>('consultations');
+  const [hospitalName, setHospitalName] = useState("");
+  const [hospitalId, setHospitalId] = useState("");
+  const [hospitalNomeExibido, setHospitalNomeExibido] = useState("");
+  const [horarios, setHorarios] = useState<HorarioConsulta[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [novoHorario, setNovoHorario] = useState("");
+  const [mensagem, setMensagem] = useState("");
 
-  // Adicionar novo horário de consulta
-  const handleAddConsultation = () => {
-    if (!newConsultation.time) return;
-    
-    const newSlot: TimeSlot = {
-      id: Math.max(...consultationSlots.map(s => s.id), 0) + 1,
-      time: newConsultation.time,
-      professionals: newConsultation.professionals,
-      patientsPerSlot: newConsultation.patientsPerSlot,
-      type: 'consultation'
-    };
-    
-    setConsultationSlots([...consultationSlots, newSlot]);
-    setNewConsultation({ time: "", professionals: 1, patientsPerSlot: 1 });
-  };
-
-  // Adicionar novo horário de exame
-  const handleAddExam = () => {
-    if (!newExam.time) return;
-    
-    const newSlot: TimeSlot = {
-      id: Math.max(...examSlots.map(s => s.id), 0) + 1,
-      time: newExam.time,
-      rooms: newExam.rooms,
-      patientsPerSlot: newExam.patientsPerSlot,
-      type: 'exam'
-    };
-    
-    setExamSlots([...examSlots, newSlot]);
-    setNewExam({ time: "", rooms: 1, patientsPerSlot: 1 });
-  };
-
-  // Remover horário
-  const removeSlot = (id: number, type: 'consultation' | 'exam') => {
-    if (type === 'consultation') {
-      setConsultationSlots(consultationSlots.filter(slot => slot.id !== id));
-    } else {
-      setExamSlots(examSlots.filter(slot => slot.id !== id));
+  // Buscar hospital pelo nome
+  const buscarHospitalPorNome = async () => {
+    setError("");
+    setMensagem("");
+    setLoading(true);
+    setHospitalId("");
+    setHorarios([]);
+    setHospitalNomeExibido("");
+    try {
+      const res = await fetch(`${apiHost}/hospitais`);
+      if (!res.ok) throw new Error("Erro ao buscar hospitais");
+      const hospitais = await res.json();
+      const hospital = hospitais.find((h: any) =>
+        h.nome && h.nome.toLowerCase().includes(hospitalName.trim().toLowerCase())
+      );
+      if (!hospital) throw new Error("Hospital não encontrado");
+      setHospitalId(hospital.id.toString());
+      setHospitalNomeExibido(hospital.nome);
+      // Carregar horários
+      const arr = Array.isArray(hospital.horarios_atendimento_consultas)
+        ? hospital.horarios_atendimento_consultas
+        : [];
+      setHorarios(arr.map((h: any, idx: number) =>
+        typeof h === "string"
+          ? { id: idx + 1, horario: h }
+          : { id: h.id ?? idx + 1, horario: h.horario ?? String(h) }
+      ));
+    } catch (err: any) {
+      setError(err.message || "Erro ao buscar hospital");
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6 text-blue-800">Gerenciamento de Consultas e Exames</h1>
+  // Adicionar novo horário
+  const handleAddHorario = async () => {
+    setMensagem("");
+    setError("");
+    if (!novoHorario.trim()) {
+      setMensagem("Preencha o horário");
+      return;
+    }
+    if (!hospitalId) {
+      setError("Busque e selecione um hospital primeiro");
+      return;
+    }
+    setLoading(true);
+    try {
+      // Busca hospital atual
+      const res = await fetch(`${apiHost}/hospitais/${hospitalId}`);
+      if (!res.ok) throw new Error("Hospital não encontrado");
+      const hospital = await res.json();
+      const arr = Array.isArray(hospital.horarios_atendimento_consultas)
+        ? hospital.horarios_atendimento_consultas
+        : [];
+      // Adiciona novo horário
+      const novosHorarios = [...arr, { id: Date.now(), horario: novoHorario }];
+      // Atualiza hospital
+      const patchRes = await fetch(`${apiHost}/hospitais/${hospitalId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ horarios_atendimento_consultas: novosHorarios }),
+      });
+      if (!patchRes.ok) throw new Error("Erro ao salvar horário");
+      setHorarios(novosHorarios);
+      setNovoHorario("");
+      setShowAddForm(false);
+      setMensagem("Horário adicionado com sucesso!");
+    } catch (err: any) {
       
-      {/* Abas para alternar entre consultas e exames */}
-      <div className="flex mb-6 border-b border-gray-200">
+      setError(err.message || "Erro desconhecido");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Remover horário
+  const handleRemoveHorario = async (id: number) => {
+    setMensagem("");
+    setError("");
+    setLoading(true);
+    try {
+      const novosHorarios = horarios.filter(h => h.id !== id);
+      const patchRes = await fetch(`${apiHost}/hospitais/${hospitalId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ horarios_atendimento_consultas: novosHorarios }),
+      });
+      if (!patchRes.ok) throw new Error("Erro ao remover horário");
+      setHorarios(novosHorarios);
+      setMensagem("Horário removido com sucesso!");
+    } catch (err: any) {
+      setError(err.message || "Erro desconhecido");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Busca
+  const horariosFiltrados = horarios.filter(h =>
+    h.horario.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold text-blue-900 mb-6">Gerenciamento de Horários de Consulta</h1>
+      <div className="mb-4 flex flex-col md:flex-row gap-4 items-center">
+        <input
+          type="text"
+          placeholder="Nome do Hospital"
+          value={hospitalName}
+          onChange={e => setHospitalName(e.target.value)}
+          className="border border-gray-300 rounded-md px-3 py-2 w-full md:w-64"
+        />
         <button
-          className={`py-2 px-4 font-medium ${activeTab === 'consultations' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-          onClick={() => setActiveTab('consultations')}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          onClick={buscarHospitalPorNome}
+          disabled={!hospitalName.trim()}
         >
-          Consultas
+          Buscar
         </button>
+        <input
+          type="text"
+          placeholder="Buscar horário..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          className="border border-gray-300 rounded-md px-3 py-2 w-full md:w-64"
+          disabled={!hospitalId}
+        />
         <button
-          className={`py-2 px-4 font-medium ${activeTab === 'exams' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-          onClick={() => setActiveTab('exams')}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          onClick={() => setShowAddForm(true)}
+          disabled={!hospitalId}
         >
-          Exames
+          Adicionar Horário
         </button>
       </div>
-      
-      {/* Conteúdo da aba de Consultas */}
-      {activeTab === 'consultations' && (
-        <div>
-          {/* Formulário para adicionar horários de consulta */}
-          <div className="bg-white p-6 rounded-lg shadow mb-8">
-            <h2 className="text-xl font-semibold mb-4 text-blue-800">Definir Horários de Consulta</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+      {hospitalNomeExibido && (
+        <div className="mb-2 text-center text-blue-800 font-semibold">Hospital selecionado: {hospitalNomeExibido}</div>
+      )}
+
+      {loading && (
+        <div className="text-center py-8 text-blue-600 font-semibold">Carregando horários...</div>
+      )}
+      {error && (
+        <div className="text-center py-4 text-red-500 font-semibold">{error}</div>
+      )}
+      {mensagem && (
+        <div className="text-center py-4 text-green-600 font-semibold">{mensagem}</div>
+      )}
+
+      {/* Modal de adicionar */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h2 className="text-xl font-semibold mb-4">Adicionar Novo Horário</h2>
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Horário</label>
+                <label className="block text-sm font-medium text-gray-700">Horário</label>
                 <input
                   type="text"
-                  value={newConsultation.time}
-                  onChange={(e) => setNewConsultation({...newConsultation, time: e.target.value})}
+                  value={novoHorario}
+                  onChange={e => setNovoHorario(e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded-md p-2"
                   placeholder="Ex: 08:00 - 09:00"
-                  className="w-full p-2 border border-gray-300 rounded"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nº de Profissionais</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={newConsultation.professionals}
-                  onChange={(e) => setNewConsultation({...newConsultation, professionals: parseInt(e.target.value)})}
-                  className="w-full p-2 border border-gray-300 rounded"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pacientes por Horário</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={newConsultation.patientsPerSlot}
-                  onChange={(e) => setNewConsultation({...newConsultation, patientsPerSlot: parseInt(e.target.value)})}
-                  className="w-full p-2 border border-gray-300 rounded"
                 />
               </div>
             </div>
-            <button
-              onClick={handleAddConsultation}
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-            >
-              Adicionar Horário
-            </button>
-          </div>
-          
-          {/* Visualização dos horários de consulta */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4 text-blue-800">Horários de Consulta Disponíveis</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horário</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profissionais</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pacientes/Horário</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {consultationSlots.map((slot) => (
-                    <tr key={slot.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{slot.time}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{slot.professionals}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{slot.patientsPerSlot}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => removeSlot(slot.id, 'consultation')}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Remover
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
+                onClick={() => setShowAddForm(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                onClick={handleAddHorario}
+              >
+                Adicionar
+              </button>
             </div>
           </div>
         </div>
       )}
-      
-      {/* Conteúdo da aba de Exames */}
-      {activeTab === 'exams' && (
-        <div>
-          {/* Formulário para adicionar horários de exame */}
-          <div className="bg-white p-6 rounded-lg shadow mb-8">
-            <h2 className="text-xl font-semibold mb-4 text-blue-800">Definir Horários de Exame</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Horário</label>
-                <input
-                  type="text"
-                  value={newExam.time}
-                  onChange={(e) => setNewExam({...newExam, time: e.target.value})}
-                  placeholder="Ex: 08:00 - 09:00"
-                  className="w-full p-2 border border-gray-300 rounded"
-                />
+
+      <div className="bg-white rounded-xl shadow-md p-4 mt-6">
+        <h2 className="text-lg font-semibold text-blue-900 mb-4">Horários de Consulta</h2>
+        {horariosFiltrados.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">Nenhum horário cadastrado</p>
+        ) : (
+          <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+            {horariosFiltrados.map(horario => (
+              <div key={horario.id} className="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+                <span className="font-medium">{horario.horario}</span>
+                <button
+                  className="bg-red-600 text-white px-3 py-1 rounded-md text-sm hover:bg-red-700"
+                  onClick={() => handleRemoveHorario(horario.id)}
+                >
+                  Remover
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nº de Salas</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={newExam.rooms}
-                  onChange={(e) => setNewExam({...newExam, rooms: parseInt(e.target.value)})}
-                  className="w-full p-2 border border-gray-300 rounded"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pacientes por Horário</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={newExam.patientsPerSlot}
-                  onChange={(e) => setNewExam({...newExam, patientsPerSlot: parseInt(e.target.value)})}
-                  className="w-full p-2 border border-gray-300 rounded"
-                />
-              </div>
-            </div>
-            <button
-              onClick={handleAddExam}
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-            >
-              Adicionar Horário
-            </button>
+            ))}
           </div>
-          
-          {/* Visualização dos horários de exame */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4 text-blue-800">Horários de Exame Disponíveis</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Horário</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salas</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pacientes/Horário</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {examSlots.map((slot) => (
-                    <tr key={slot.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{slot.time}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{slot.rooms}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{slot.patientsPerSlot}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => removeSlot(slot.id, 'exam')}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Remover
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
