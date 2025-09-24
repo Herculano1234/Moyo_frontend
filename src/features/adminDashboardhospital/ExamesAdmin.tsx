@@ -10,6 +10,7 @@ import {
   Legend,
 } from 'chart.js';
 
+//wertyuiop
 ChartJS.register(
   CategoryScale,
   LinearScale,
