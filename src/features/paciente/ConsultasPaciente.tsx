@@ -1,3 +1,7 @@
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 // Função para buscar hospitais do backend
 async function getHospitaisAPI(): Promise<HospitalUnit[]> {
   try {
@@ -8,11 +12,6 @@ async function getHospitaisAPI(): Promise<HospitalUnit[]> {
     return [];
   }
 }
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
 // Fix para ícones do Leaflet
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -290,7 +289,13 @@ const MapaHospital: React.FC<MapaHospitalProps> = ({
             <Popup className="font-bold">Sua localização</Popup>
           </Marker>
         )}
-  {unidadesFiltradas.map((unidade: HospitalUnit) => (
+  {unidadesFiltradas.filter(
+    (unidade: HospitalUnit) =>
+      typeof unidade.lat === 'number' &&
+      typeof unidade.lng === 'number' &&
+      !isNaN(unidade.lat) &&
+      !isNaN(unidade.lng)
+  ).map((unidade: HospitalUnit) => (
           <Marker 
             key={unidade.id} 
             position={[unidade.lat, unidade.lng]} 
