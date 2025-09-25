@@ -1,3 +1,17 @@
+// Função para converter string "HH:MM" em minutos
+function timeToMinutes(time: string) {
+  const [h, m] = time.split(":");
+  return parseInt(h) * 60 + parseInt(m);
+}
+
+// Função para verificar sobreposição de intervalos
+function isOverlap(startA: string, endA: string, startB: string, endB: string) {
+  const a1 = timeToMinutes(startA);
+  const a2 = timeToMinutes(endA);
+  const b1 = timeToMinutes(startB);
+  const b2 = timeToMinutes(endB);
+  return a1 < b2 && b1 < a2;
+}
 import React, { useState, useEffect } from "react";
 
 interface TimeSlot {
@@ -7,6 +21,7 @@ interface TimeSlot {
   rooms?: number;
   patients_per_slot: number;
   type: "consultation" | "exam";
+  weekday?: string;
 }
 
 const Consult: React.FC = () => {
@@ -18,14 +33,22 @@ const Consult: React.FC = () => {
 
   const [consultationSlots, setConsultationSlots] = useState<TimeSlot[]>([]);
   const [examSlots, setExamSlots] = useState<TimeSlot[]>([]);
+  const [errorConsult, setErrorConsult] = useState("");
+  const [errorExam, setErrorExam] = useState("");
   const [newConsultation, setNewConsultation] = useState({
-    time_slot: "",
+    startHour: "08",
+    startMinute: "00",
+    endHour: "09",
+    endMinute: "00",
     professionals: 1,
     patients_per_slot: 1,
     weekday: "Segunda",
   });
   const [newExam, setNewExam] = useState({
-    time_slot: "",
+    startHour: "08",
+    startMinute: "00",
+    endHour: "09",
+    endMinute: "00",
     rooms: 1,
     patients_per_slot: 1,
     weekday: "Segunda",
@@ -57,14 +80,42 @@ const Consult: React.FC = () => {
 
   // 🔹 Adicionar horário de consulta
   const handleAddConsultation = async () => {
-    if (!newConsultation.time_slot) return;
+    setErrorConsult("");
+    const time_slot = `${newConsultation.startHour}:${newConsultation.startMinute} - ${newConsultation.endHour}:${newConsultation.endMinute}`;
+    // Verifica se horário é válido
+    const startMinutes = timeToMinutes(`${newConsultation.startHour}:${newConsultation.startMinute}`);
+    const endMinutes = timeToMinutes(`${newConsultation.endHour}:${newConsultation.endMinute}`);
+    if (endMinutes <= startMinutes) {
+      setErrorConsult("O horário final deve ser maior que o inicial.");
+      return;
+    }
+    // Verifica se já existe horário para o mesmo dia e horário
+    const exists = consultationSlots.some(
+      slot => slot.time_slot === time_slot && slot.weekday === newConsultation.weekday
+    );
+    if (exists) {
+      setErrorConsult("Já existe um horário cadastrado para esse dia e horário.");
+      return;
+    }
+    // Verifica sobreposição de horários para o mesmo dia
+    const [newStart, newEnd] = time_slot.split(" - ");
+    const overlap = consultationSlots.some(slot => {
+      if (slot.weekday !== newConsultation.weekday) return false;
+      if (!slot.time_slot) return false;
+      const [slotStart, slotEnd] = slot.time_slot.split(" - ");
+      return isOverlap(newStart, newEnd, slotStart, slotEnd);
+    });
+    if (overlap) {
+      setErrorConsult("Dois horários não podem estar no mesmo tempo. Sobreposição detectada.");
+      return;
+    }
     try {
       const res = await fetch(`https://moyo-backend.vercel.app/hospitais/${hospitalId}/schedules`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "consultation",
-          time_slot: newConsultation.time_slot,
+          time_slot,
           professionals: newConsultation.professionals,
           patients_per_slot: newConsultation.patients_per_slot,
           weekday: newConsultation.weekday,
@@ -72,7 +123,7 @@ const Consult: React.FC = () => {
       });
       const data = await res.json();
       setConsultationSlots((prev) => [...prev, data]);
-      setNewConsultation({ time_slot: "", professionals: 1, patients_per_slot: 1, weekday: "Segunda" });
+      setNewConsultation({ startHour: "08", startMinute: "00", endHour: "09", endMinute: "00", professionals: 1, patients_per_slot: 1, weekday: "Segunda" });
     } catch (err) {
       console.error("Erro ao adicionar consulta:", err);
     }
@@ -80,14 +131,42 @@ const Consult: React.FC = () => {
 
   // 🔹 Adicionar horário de exame
   const handleAddExam = async () => {
-    if (!newExam.time_slot) return;
+    setErrorExam("");
+    const time_slot = `${newExam.startHour}:${newExam.startMinute} - ${newExam.endHour}:${newExam.endMinute}`;
+    // Verifica se horário é válido
+    const startMinutes = timeToMinutes(`${newExam.startHour}:${newExam.startMinute}`);
+    const endMinutes = timeToMinutes(`${newExam.endHour}:${newExam.endMinute}`);
+    if (endMinutes <= startMinutes) {
+      setErrorExam("O horário final deve ser maior que o inicial.");
+      return;
+    }
+    // Verifica se já existe horário para o mesmo dia e horário
+    const exists = examSlots.some(
+      slot => slot.time_slot === time_slot && slot.weekday === newExam.weekday
+    );
+    if (exists) {
+      setErrorExam("Já existe um horário cadastrado para esse dia e horário.");
+      return;
+    }
+    // Verifica sobreposição de horários para o mesmo dia
+    const [newStart, newEnd] = time_slot.split(" - ");
+    const overlap = examSlots.some(slot => {
+      if (slot.weekday !== newExam.weekday) return false;
+      if (!slot.time_slot) return false;
+      const [slotStart, slotEnd] = slot.time_slot.split(" - ");
+      return isOverlap(newStart, newEnd, slotStart, slotEnd);
+    });
+    if (overlap) {
+      setErrorExam("Dois horários não podem estar no mesmo tempo. Sobreposição detectada.");
+      return;
+    }
     try {
       const res = await fetch(`https://moyo-backend.vercel.app/hospitais/${hospitalId}/schedules`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "exam",
-          time_slot: newExam.time_slot,
+          time_slot,
           rooms: newExam.rooms,
           patients_per_slot: newExam.patients_per_slot,
           weekday: newExam.weekday,
@@ -95,7 +174,7 @@ const Consult: React.FC = () => {
       });
       const data = await res.json();
       setExamSlots((prev) => [...prev, data]);
-      setNewExam({ time_slot: "", rooms: 1, patients_per_slot: 1, weekday: "Segunda" });
+      setNewExam({ startHour: "08", startMinute: "00", endHour: "09", endMinute: "00", rooms: 1, patients_per_slot: 1, weekday: "Segunda" });
     } catch (err) {
       console.error("Erro ao adicionar exame:", err);
     }
@@ -151,10 +230,13 @@ const Consult: React.FC = () => {
       {activeTab === "consultations" && (
         <div>
           <div className="bg-white p-6 rounded-lg shadow mb-8">
+            {errorConsult && (
+              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded text-sm">{errorConsult}</div>
+            )}
             <h2 className="text-xl font-semibold mb-4 text-blue-800">
               Definir Horários de Consulta
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
               <select
                 value={newConsultation.weekday}
                 onChange={e => setNewConsultation({ ...newConsultation, weekday: e.target.value })}
@@ -168,23 +250,31 @@ const Consult: React.FC = () => {
                 <option value="Sábado">Sábado</option>
                 <option value="Domingo">Domingo</option>
               </select>
-              <select
-                value={newConsultation.time_slot}
-                onChange={e => setNewConsultation({ ...newConsultation, time_slot: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded"
-              >
-                <option value="">Selecione o horário</option>
-                <option value="08:00 - 09:00">08:00 - 09:00</option>
-                <option value="09:00 - 10:00">09:00 - 10:00</option>
-                <option value="10:00 - 11:00">10:00 - 11:00</option>
-                <option value="11:00 - 12:00">11:00 - 12:00</option>
-                <option value="12:00 - 13:00">12:00 - 13:00</option>
-                <option value="13:00 - 14:00">13:00 - 14:00</option>
-                <option value="14:00 - 15:00">14:00 - 15:00</option>
-                <option value="15:00 - 16:00">15:00 - 16:00</option>
-                <option value="16:00 - 17:00">16:00 - 17:00</option>
-                <option value="17:00 - 18:00">17:00 - 18:00</option>
-              </select>
+              <div className="flex gap-1">
+                <select value={newConsultation.startHour} onChange={e => setNewConsultation({ ...newConsultation, startHour: e.target.value })} className="p-2 border rounded">
+                  {[...Array(24)].map((_, i) => (
+                    <option key={i} value={i.toString().padStart(2, "0")}>{i.toString().padStart(2, "0")}</option>
+                  ))}
+                </select>
+                :
+                <select value={newConsultation.startMinute} onChange={e => setNewConsultation({ ...newConsultation, startMinute: e.target.value })} className="p-2 border rounded">
+                  {["00", "15", "30", "45"].map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <span className="px-1">até</span>
+                <select value={newConsultation.endHour} onChange={e => setNewConsultation({ ...newConsultation, endHour: e.target.value })} className="p-2 border rounded">
+                  {[...Array(24)].map((_, i) => (
+                    <option key={i} value={i.toString().padStart(2, "0")}>{i.toString().padStart(2, "0")}</option>
+                  ))}
+                </select>
+                :
+                <select value={newConsultation.endMinute} onChange={e => setNewConsultation({ ...newConsultation, endMinute: e.target.value })} className="p-2 border rounded">
+                  {["00", "15", "30", "45"].map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
               <input
                 type="number"
                 min="1"
@@ -257,10 +347,13 @@ const Consult: React.FC = () => {
       {activeTab === "exams" && (
         <div>
           <div className="bg-white p-6 rounded-lg shadow mb-8">
+            {errorExam && (
+              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded text-sm">{errorExam}</div>
+            )}
             <h2 className="text-xl font-semibold mb-4 text-blue-800">
               Definir Horários de Exame
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
               <select
                 value={newExam.weekday}
                 onChange={e => setNewExam({ ...newExam, weekday: e.target.value })}
@@ -274,23 +367,31 @@ const Consult: React.FC = () => {
                 <option value="Sábado">Sábado</option>
                 <option value="Domingo">Domingo</option>
               </select>
-              <select
-                value={newExam.time_slot}
-                onChange={e => setNewExam({ ...newExam, time_slot: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded"
-              >
-                <option value="">Selecione o horário</option>
-                <option value="08:00 - 09:00">08:00 - 09:00</option>
-                <option value="09:00 - 10:00">09:00 - 10:00</option>
-                <option value="10:00 - 11:00">10:00 - 11:00</option>
-                <option value="11:00 - 12:00">11:00 - 12:00</option>
-                <option value="12:00 - 13:00">12:00 - 13:00</option>
-                <option value="13:00 - 14:00">13:00 - 14:00</option>
-                <option value="14:00 - 15:00">14:00 - 15:00</option>
-                <option value="15:00 - 16:00">15:00 - 16:00</option>
-                <option value="16:00 - 17:00">16:00 - 17:00</option>
-                <option value="17:00 - 18:00">17:00 - 18:00</option>
-              </select>
+              <div className="flex gap-1">
+                <select value={newExam.startHour} onChange={e => setNewExam({ ...newExam, startHour: e.target.value })} className="p-2 border rounded">
+                  {[...Array(24)].map((_, i) => (
+                    <option key={i} value={i.toString().padStart(2, "0")}>{i.toString().padStart(2, "0")}</option>
+                  ))}
+                </select>
+                :
+                <select value={newExam.startMinute} onChange={e => setNewExam({ ...newExam, startMinute: e.target.value })} className="p-2 border rounded">
+                  {["00", "15", "30", "45"].map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <span className="px-1">até</span>
+                <select value={newExam.endHour} onChange={e => setNewExam({ ...newExam, endHour: e.target.value })} className="p-2 border rounded">
+                  {[...Array(24)].map((_, i) => (
+                    <option key={i} value={i.toString().padStart(2, "0")}>{i.toString().padStart(2, "0")}</option>
+                  ))}
+                </select>
+                :
+                <select value={newExam.endMinute} onChange={e => setNewExam({ ...newExam, endMinute: e.target.value })} className="p-2 border rounded">
+                  {["00", "15", "30", "45"].map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
               <input
                 type="number"
                 min="1"
