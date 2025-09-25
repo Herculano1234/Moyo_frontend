@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from "react";
-<<<<<<< HEAD
-=======
 import { Chart } from 'react-chartjs-2';
->>>>>>> e0f6feebd8fbdedbb0d2acf45cdbe36eb9a94875
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,14 +9,8 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-<<<<<<< HEAD
-import { Chart } from 'react-chartjs-2';
-
-// Registrar componentes do ChartJS
-=======
 
 //wertyuiop
->>>>>>> e0f6feebd8fbdedbb0d2acf45cdbe36eb9a94875
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -29,8 +20,6 @@ ChartJS.register(
   Legend
 );
 
-<<<<<<< HEAD
-=======
 interface Exam {
   id: number;
   nome: string;
@@ -46,84 +35,27 @@ interface Exam {
   doneCount: number; // Add this line
 }
 
->>>>>>> e0f6feebd8fbdedbb0d2acf45cdbe36eb9a94875
 interface Doctor {
   id: number;
   nome: string;
   especialidade: string;
 }
 
-<<<<<<< HEAD
-interface Exam {
-  id: number;
-  nome: string;
-  disponivel: boolean;
-  doneCount?: number;
-  profissional_id?: number;
-  paciente_id?: number;
-  data_hora: string; // Changed from optional to required
-  status: string; // Changed from optional to required
-  hospital_id: number;
-  resultado?: string;
-  observacoes?: string;
-}
-
-=======
->>>>>>> e0f6feebd8fbdedbb0d2acf45cdbe36eb9a94875
 const ExamesAdmin: React.FC = () => {
   const [addExamLoading, setAddExamLoading] = useState(false);
   const [addExamMessage, setAddExamMessage] = useState("");
   const [exams, setExams] = useState<Exam[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
-<<<<<<< HEAD
-  // Buscar nome/unidade do hospital do admin logado
-  const adminRaw = localStorage.getItem("moyo-user");
-  let unidadeHospital = "";
-  if (adminRaw) {
-    try {
-      const adminUser = JSON.parse(adminRaw);
-      unidadeHospital = adminUser.unidade || adminUser.hospital || adminUser.unidade_hospitalar || "";
-    } catch {}
-  }
-=======
   const [error, setError] = useState<string | null>(null);
   const [newExamName, setNewExamName] = useState("");
   const [chartData, setChartData] = useState<any>(null);
   const hospitalId = localStorage.getItem('moyo-hospital-id');
->>>>>>> e0f6feebd8fbdedbb0d2acf45cdbe36eb9a94875
 
   // Buscar exames e médicos do banco de dados
   useEffect(() => {
     const fetchData = async () => {
       try {
-<<<<<<< HEAD
-        // Buscar exames do catálogo do hospital
-        const examsResponse = await fetch(`https://moyo-backend.vercel.app/exames-catalogo?unidade=${encodeURIComponent(unidadeHospital)}`);
-        const examsDataRaw = await examsResponse.json();
-        // Buscar médicos filtrando por unidade/hospital
-        const doctorsResponse = await fetch(`https://moyo-backend.vercel.app/profissionais?unidade=${encodeURIComponent(unidadeHospital)}`);
-        const doctorsDataRaw = await doctorsResponse.json();
-
-        setExams(examsDataRaw.map((e: any) => ({
-          id: e.id,
-          nome: e.tipo,
-          disponivel: e.disponivel ?? true,
-          doneCount: 0,
-          profissional_id: undefined,
-          paciente_id: undefined,
-          data_hora: undefined,
-          status: undefined,
-          hospital_id: e.hospital_id,
-          resultado: e.resultado,
-          observacoes: e.observacoes
-        })));
-        setDoctors(doctorsDataRaw.map((d: any) => ({
-          id: d.id,
-          nome: d.nome,
-          especialidade: d.especialidade
-        })));
-=======
         const [examsResponse, doctorsResponse] = await Promise.all([
           fetch(`${process.env.REACT_APP_API_URL}/api/exames/hospital/${hospitalId}`),
           fetch(`${process.env.REACT_APP_API_URL}/api/profissionais/hospital/${hospitalId}`)
@@ -138,26 +70,18 @@ const ExamesAdmin: React.FC = () => {
 
         setExams(examsData);
         setDoctors(doctorsData);
->>>>>>> e0f6feebd8fbdedbb0d2acf45cdbe36eb9a94875
       } catch (error) {
-        console.error('Erro ao buscar dados:', error);
+        console.error('Erro:', error);
+        setError('Erro ao carregar dados');
       } finally {
         setLoading(false);
       }
     };
-<<<<<<< HEAD
-    fetchData();
-  }, [unidadeHospital]);
-  
-  const [newExamName, setNewExamName] = useState("");
-  const [chartData, setChartData] = useState<any>(null);
-=======
 
     if (hospitalId) {
       fetchData();
     }
   }, [hospitalId]);
->>>>>>> e0f6feebd8fbdedbb0d2acf45cdbe36eb9a94875
 
   // Calcular totais
   const totalExams = exams.length;
@@ -198,14 +122,8 @@ const ExamesAdmin: React.FC = () => {
 
   // Adicionar novo exame
   const handleAddExam = async () => {
-<<<<<<< HEAD
-    if (newExamName.trim() === "") return;
-    setAddExamLoading(true);
-    setAddExamMessage("");
-=======
     if (!newExamName.trim()) return;
 
->>>>>>> e0f6feebd8fbdedbb0d2acf45cdbe36eb9a94875
     try {
       const response = await fetch(`https://moyo-backend.vercel.app/exames-catalogo`, {
         method: 'POST',
@@ -215,30 +133,6 @@ const ExamesAdmin: React.FC = () => {
         body: JSON.stringify({
           tipo: newExamName,
           disponivel: true,
-<<<<<<< HEAD
-          unidade: unidadeHospital
-        })
-      });
-      if (response.ok) {
-        const newExam = await response.json();
-        setExams([...exams, {
-          id: newExam.id,
-          nome: newExam.tipo,
-          disponivel: newExam.disponivel ?? true,
-          doneCount: 0,
-          profissional_id: undefined,
-          paciente_id: undefined,
-          data_hora: undefined,
-          status: undefined,
-          hospital_id: newExam.hospital_id,
-          resultado: newExam.resultado,
-          observacoes: newExam.observacoes
-        }]);
-        setNewExamName("");
-        setAddExamMessage("Exame adicionado com sucesso!");
-      } else {
-        setAddExamMessage("Erro ao adicionar exame.");
-=======
           hospital_id: hospitalId,
           data_hora: new Date().toISOString(),
           status: 'disponivel',
@@ -248,8 +142,11 @@ const ExamesAdmin: React.FC = () => {
 
       if (!response.ok) {
         throw new Error('Erro ao adicionar exame');
->>>>>>> e0f6feebd8fbdedbb0d2acf45cdbe36eb9a94875
       }
+
+      const newExam = await response.json();
+      setExams([...exams, newExam]);
+      setNewExamName('');
     } catch (error) {
       setAddExamMessage("Erro ao adicionar exame.");
       console.error('Erro ao adicionar exame:', error);
@@ -270,23 +167,39 @@ const ExamesAdmin: React.FC = () => {
           disponivel: !exam?.disponivel
         })
       });
-<<<<<<< HEAD
-      if (response.ok) {
-        setExams(exams.map(exam => 
-          exam.id === id ? { ...exam, disponivel: !exam.disponivel } : exam
-        ));
-=======
 
       if (!response.ok) {
         throw new Error('Erro ao atualizar exame');
->>>>>>> e0f6feebd8fbdedbb0d2acf45cdbe36eb9a94875
       }
+
+      setExams(exams.map(exam => 
+        exam.id === id ? { ...exam, disponivel: !exam.disponivel } : exam
+      ));
     } catch (error) {
-      console.error('Erro ao atualizar disponibilidade:', error);
+      console.error('Erro:', error);
+      setError('Erro ao atualizar exame');
     }
   };
 
-  // Atribuir exame a um médico
+  // Excluir exame
+  const deleteExam = async (id: number) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/exames/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao deletar exame');
+      }
+
+      setExams(exams.filter(exam => exam.id !== id));
+    } catch (error) {
+      console.error('Erro:', error);
+      setError('Erro ao deletar exame');
+    }
+  };
+
+  // Atribuir exame a médico
   const assignExamToDoctor = async (examId: number, doctorId: number) => {
     try {
       const response = await fetch(`https://moyo-backend.vercel.app/exames/${examId}`, {
@@ -298,40 +211,18 @@ const ExamesAdmin: React.FC = () => {
           profissional_id: doctorId
         })
       });
-<<<<<<< HEAD
-      if (response.ok) {
-        setExams(exams.map(exam => 
-          exam.id === examId ? { ...exam, profissional_id: doctorId } : exam
-        ));
-=======
 
       if (!response.ok) {
         throw new Error('Erro ao atribuir exame ao médico');
->>>>>>> e0f6feebd8fbdedbb0d2acf45cdbe36eb9a94875
       }
-    } catch (error) {
-      console.error('Erro ao atribuir exame:', error);
-    }
-  };
 
-<<<<<<< HEAD
-  // Excluir exame
-  const deleteExam = async (id: number) => {
-    try {
-      const response = await fetch(`https://moyo-backend.vercel.app/exames/${id}`, {
-        method: 'DELETE'
-      });
-      if (response.ok) {
-        setExams(exams.filter(exam => exam.id !== id));
-      }
-=======
       const updatedExam = await response.json();
       setExams(exams.map(exam => 
         exam.id === examId ? { ...exam, profissional_id: doctorId } : exam
       ));
->>>>>>> e0f6feebd8fbdedbb0d2acf45cdbe36eb9a94875
     } catch (error) {
-      console.error('Erro ao excluir exame:', error);
+      console.error('Erro:', error);
+      setError('Erro ao atribuir exame ao médico');
     }
   };
 
@@ -339,7 +230,7 @@ const ExamesAdmin: React.FC = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold mb-6 text-blue-800">Gerenciamento de Exames</h1>
       
-      {/*------------- Cards de Estatísticas ------- */}
+      {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">Total de Exames</h3>
