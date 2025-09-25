@@ -10,8 +10,11 @@ interface TimeSlot {
 }
 
 const Consult: React.FC = () => {
-  const hospitalId = localStorage.getItem("moyo-hospital-id") || 2;
-  const hospitalNome = localStorage.getItem("moyo-hospital-nome") || "ara";
+  const user = localStorage.getItem("moyo-user");
+  const hospitalId =
+    (user && JSON.parse(user).hospital_id) ||
+    localStorage.getItem("moyo-hospital-id") ||
+    3;
 
   const [consultationSlots, setConsultationSlots] = useState<TimeSlot[]>([]);
   const [examSlots, setExamSlots] = useState<TimeSlot[]>([]);
@@ -19,11 +22,13 @@ const Consult: React.FC = () => {
     time_slot: "",
     professionals: 1,
     patients_per_slot: 1,
+    weekday: "Segunda",
   });
   const [newExam, setNewExam] = useState({
     time_slot: "",
     rooms: 1,
     patients_per_slot: 1,
+    weekday: "Segunda",
   });
   const [activeTab, setActiveTab] = useState<"consultations" | "exams">("consultations");
 
@@ -62,11 +67,12 @@ const Consult: React.FC = () => {
           time_slot: newConsultation.time_slot,
           professionals: newConsultation.professionals,
           patients_per_slot: newConsultation.patients_per_slot,
+          weekday: newConsultation.weekday,
         }),
       });
       const data = await res.json();
       setConsultationSlots((prev) => [...prev, data]);
-      setNewConsultation({ time_slot: "", professionals: 1, patients_per_slot: 1 });
+      setNewConsultation({ time_slot: "", professionals: 1, patients_per_slot: 1, weekday: "Segunda" });
     } catch (err) {
       console.error("Erro ao adicionar consulta:", err);
     }
@@ -84,11 +90,12 @@ const Consult: React.FC = () => {
           time_slot: newExam.time_slot,
           rooms: newExam.rooms,
           patients_per_slot: newExam.patients_per_slot,
+          weekday: newExam.weekday,
         }),
       });
       const data = await res.json();
       setExamSlots((prev) => [...prev, data]);
-      setNewExam({ time_slot: "", rooms: 1, patients_per_slot: 1 });
+      setNewExam({ time_slot: "", rooms: 1, patients_per_slot: 1, weekday: "Segunda" });
     } catch (err) {
       console.error("Erro ao adicionar exame:", err);
     }
@@ -113,7 +120,7 @@ const Consult: React.FC = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold mb-6 text-blue-800">
-        Gerenciamento de Consultas e Exames - {hospitalNome}
+        Gerenciamento de Consultas e Exames 
       </h1>
 
       {/* Tabs */}
@@ -147,16 +154,37 @@ const Consult: React.FC = () => {
             <h2 className="text-xl font-semibold mb-4 text-blue-800">
               Definir Horários de Consulta
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input
-                type="text"
-                value={newConsultation.time_slot}
-                onChange={(e) =>
-                  setNewConsultation({ ...newConsultation, time_slot: e.target.value })
-                }
-                placeholder="Ex: 08:00 - 09:00"
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <select
+                value={newConsultation.weekday}
+                onChange={e => setNewConsultation({ ...newConsultation, weekday: e.target.value })}
                 className="w-full p-2 border border-gray-300 rounded"
-              />
+              >
+                <option value="Segunda">Segunda</option>
+                <option value="Terça">Terça</option>
+                <option value="Quarta">Quarta</option>
+                <option value="Quinta">Quinta</option>
+                <option value="Sexta">Sexta</option>
+                <option value="Sábado">Sábado</option>
+                <option value="Domingo">Domingo</option>
+              </select>
+              <select
+                value={newConsultation.time_slot}
+                onChange={e => setNewConsultation({ ...newConsultation, time_slot: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded"
+              >
+                <option value="">Selecione o horário</option>
+                <option value="08:00 - 09:00">08:00 - 09:00</option>
+                <option value="09:00 - 10:00">09:00 - 10:00</option>
+                <option value="10:00 - 11:00">10:00 - 11:00</option>
+                <option value="11:00 - 12:00">11:00 - 12:00</option>
+                <option value="12:00 - 13:00">12:00 - 13:00</option>
+                <option value="13:00 - 14:00">13:00 - 14:00</option>
+                <option value="14:00 - 15:00">14:00 - 15:00</option>
+                <option value="15:00 - 16:00">15:00 - 16:00</option>
+                <option value="16:00 - 17:00">16:00 - 17:00</option>
+                <option value="17:00 - 18:00">17:00 - 18:00</option>
+              </select>
               <input
                 type="number"
                 min="1"
@@ -232,14 +260,37 @@ const Consult: React.FC = () => {
             <h2 className="text-xl font-semibold mb-4 text-blue-800">
               Definir Horários de Exame
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input
-                type="text"
-                value={newExam.time_slot}
-                onChange={(e) => setNewExam({ ...newExam, time_slot: e.target.value })}
-                placeholder="Ex: 08:00 - 09:00"
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <select
+                value={newExam.weekday}
+                onChange={e => setNewExam({ ...newExam, weekday: e.target.value })}
                 className="w-full p-2 border border-gray-300 rounded"
-              />
+              >
+                <option value="Segunda">Segunda</option>
+                <option value="Terça">Terça</option>
+                <option value="Quarta">Quarta</option>
+                <option value="Quinta">Quinta</option>
+                <option value="Sexta">Sexta</option>
+                <option value="Sábado">Sábado</option>
+                <option value="Domingo">Domingo</option>
+              </select>
+              <select
+                value={newExam.time_slot}
+                onChange={e => setNewExam({ ...newExam, time_slot: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded"
+              >
+                <option value="">Selecione o horário</option>
+                <option value="08:00 - 09:00">08:00 - 09:00</option>
+                <option value="09:00 - 10:00">09:00 - 10:00</option>
+                <option value="10:00 - 11:00">10:00 - 11:00</option>
+                <option value="11:00 - 12:00">11:00 - 12:00</option>
+                <option value="12:00 - 13:00">12:00 - 13:00</option>
+                <option value="13:00 - 14:00">13:00 - 14:00</option>
+                <option value="14:00 - 15:00">14:00 - 15:00</option>
+                <option value="15:00 - 16:00">15:00 - 16:00</option>
+                <option value="16:00 - 17:00">16:00 - 17:00</option>
+                <option value="17:00 - 18:00">17:00 - 18:00</option>
+              </select>
               <input
                 type="number"
                 min="1"
