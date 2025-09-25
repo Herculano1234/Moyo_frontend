@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import ProfissionaisAdmin from "./ProfissionaisAdmin";
-import ExamesAdmin from "./examesAdmin";
+import ExamesAdmin from "./ExamesAdmin";
 import Financas from "./Especialidades";
 import Consult from "./Consult";
 import Definicoes from "./Definicoes";
