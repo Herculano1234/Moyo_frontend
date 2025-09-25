@@ -128,7 +128,7 @@ export default function LandingPage() {
         
         {/* Desktop nav */}
         <nav className="hidden md:flex gap-6 items-center">
-          {["home", "services", "about", "features", "contact"].map((item) => (
+          {["Inicio", "Serviços", "Sobre nós", "Funcionalidades", "contactos"].map((item) => (
             <motion.button
               key={item}
               onClick={() => handleScrollTo(item)}
@@ -213,7 +213,7 @@ export default function LandingPage() {
                 </div>
                 
                 <nav className="flex flex-col gap-6">
-                  {["home", "services", "about", "features", "contact"].map((item) => (
+                  {["Inicio", "Serviços", "Sobre nós", "Funcionalidades", "Contato"].map((item) => (
                     <motion.button
                       key={item}
                       onClick={() => handleScrollTo(item)}
@@ -251,7 +251,7 @@ export default function LandingPage() {
       <div className="overflow-y-auto">
       {/* Hero Section com gradiente animado */}
       <section 
-        id="home"
+        id="Inicio"
         className="relative py-16 md:py-24 overflow-hidden"
         style={{
           background: `linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(255, 255, 255, 0) 50%, rgba(99, 102, 241, 0.05) 100%)`
@@ -357,7 +357,7 @@ export default function LandingPage() {
       </section>
 
       {/* Services Section */}
-      <section id="services" className="py-16 md:py-20 bg-white dark:bg-gray-800">
+      <section id="servico" className="py-16 md:py-20 bg-white dark:bg-gray-800">
         <div className="container mx-auto px-4">
           <motion.div
             className="text-center mb-12 md:mb-16"

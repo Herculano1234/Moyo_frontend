@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { HiMenu, HiX, HiHome, HiUserGroup, HiDocumentText, HiChartBar, HiCog } from "react-icons/hi";
 
 const navItems = [
-  { path: "/", label: "Dashboard", icon: <HiHome className="w-5 h-5" /> },
+  { path: "/dashboard", label: "Dashboard", icon: <HiHome className="w-5 h-5" /> },
   { path: "/pacientes", label: "Pacientes", icon: <HiUserGroup className="w-5 h-5" /> },
   { path: "/exames", label: "Exames", icon: <HiDocumentText className="w-5 h-5" /> },
   { path: "/relatorios", label: "Relatórios", icon: <HiChartBar className="w-5 h-5" /> },

@@ -2,9 +2,17 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-
+// Função para buscar hospitais do backend
+async function getHospitaisAPI(): Promise<HospitalUnit[]> {
+  try {
+    const resp = await fetch(`https://moyo-backend.vercel.app/hospitais`);
+    if (!resp.ok) throw new Error('Erro ao buscar hospitais');
+    return await resp.json();
+  } catch {
+    return [];
+  }
+}
 // Fix para ícones do Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -26,79 +34,6 @@ const descricoesEspecialidades = {
   "Cardiologia Infantil": "Subespecialidade que trata de problemas cardíacos em crianças, incluindo cardiopatias congênitas e adquiridas."
 };
 
-// Unidades hospitalares
-const unidadesHospitalares = [
-  {
-    id: "1",
-    nome: "Hospital Geral de Luanda",
-    lat: -8.8383,
-    lng: 13.2344,
-    especialidades: ["Cardiologia", "Clínica Geral", "Pediatria", "Ortopedia"],
-    areas: ["Emergência", "Consulta", "Exames"],
-    endereco: "Rua Major Kanhangulo, Luanda",
-    datasDisponiveis: ["2025-07-30", "2025-07-31", "2025-08-01", "2025-08-03"]
-  },
-  {
-    id: "2",
-    nome: "Clínica Sagrada Esperança",
-    lat: -8.8155,
-    lng: 13.2300,
-    especialidades: ["Ortopedia", "Pediatria", "Dermatologia", "Oftalmologia"],
-    areas: ["Emergência", "Consulta"],
-    endereco: "Rua da Missão, Luanda",
-    datasDisponiveis: ["2025-07-30", "2025-08-02", "2025-08-05"]
-  },
-  {
-    id: "3",
-    nome: "Hospital Josina Machel",
-    lat: -8.8126,
-    lng: 13.2371,
-    especialidades: ["Cardiologia", "Neurologia", "Oftalmologia", "Ginecologia"],
-    areas: ["Consulta", "Exames"],
-    endereco: "Avenida Comandante Valódia, Luanda",
-    datasDisponiveis: ["2025-07-31", "2025-08-01", "2025-08-04"]
-  },
-  {
-    id: "4",
-    nome: "Hospital Militar",
-    lat: -8.8308,
-    lng: 13.2450,
-    especialidades: ["Clínica Geral", "Cirurgia", "Ortopedia", "Pediatria"],
-    areas: ["Emergência", "Consulta", "Cirurgia"],
-    endereco: "Rua 17 de Setembro, Luanda",
-    datasDisponiveis: ["2025-08-01", "2025-08-02", "2025-08-03"]
-  },
-  {
-    id: "5",
-    nome: "Clínica Multiperfil",
-    lat: -8.8392,
-    lng: 13.2415,
-    especialidades: ["Dermatologia", "Oftalmologia", "Cardiologia", "Clínica Geral"],
-    areas: ["Consulta", "Exames"],
-    endereco: "Rua Amílcar Cabral, Luanda",
-    datasDisponiveis: ["2025-07-30", "2025-08-01", "2025-08-05"]
-  },
-  {
-    id: "6",
-    nome: "Hospital Americo Boavida",
-    lat: -8.8180,
-    lng: 13.2345,
-    especialidades: ["Clínica Geral", "Pediatria", "Ginecologia", "Ortopedia"],
-    areas: ["Emergência", "Consulta", "Internamento"],
-    endereco: "Largo do Kinaxixi, Luanda",
-    datasDisponiveis: ["2025-07-31", "2025-08-02", "2025-08-04"]
-  },
-  {
-    id: "7",
-    nome: "Hospital Maria Pia",
-    lat: -8.8035,
-    lng: 13.2412,
-    especialidades: ["Pediatria", "Neonatologia", "Cardiologia Infantil"],
-    areas: ["Consulta", "Internamento"],
-    endereco: "Bairro Ingombota, Luanda",
-    datasDisponiveis: ["2025-08-03", "2025-08-05", "2025-08-06"]
-  }
-];
 
 // Ícones personalizados
 const hospitalIcon = new L.Icon({
@@ -136,12 +71,22 @@ interface HospitalUnit {
   nome: string;
   lat: number;
   lng: number;
-  especialidades: string[];
+  especialidades: string[] | string;
   areas: string[];
   endereco: string;
   distancia?: number;
   datasDisponiveis: string[];
 }
+
+// Função para garantir array de especialidades
+function parseEspecialidades(especialidades: string[] | string): string[] {
+  if (Array.isArray(especialidades)) return especialidades;
+  if (typeof especialidades === 'string') {
+    return especialidades.split(',').map(e => e.trim()).filter(e => e.length > 0);
+  }
+  return [];
+}
+
 
 // Perguntas de triagem
 const perguntasTriagem = [
@@ -204,11 +149,11 @@ const perguntasTriagem = [
 ];
 
 // Funções de armazenamento e integração com API
-const apiHost = window.location.hostname;
+const apiHost = "moyo-backend.vercel.app";
 
 async function getConsultasAPI(pacienteId: string): Promise<Consulta[]> {
   try {
-    const resp = await fetch(`http://${apiHost}:4000/pacientes/${pacienteId}/consultas`);
+    const resp = await fetch(`http://${apiHost}/pacientes/${pacienteId}/consultas`);
     if (!resp.ok) throw new Error('Erro ao buscar consultas');
     return await resp.json();
   } catch {
@@ -225,7 +170,7 @@ async function saveConsultaAPI(pacienteId: number, consulta: Partial<Consulta>):
       prioridade: consulta.prioridade || null,
       local: consulta.local || null
     };
-    const resp = await fetch(`http://${apiHost}:4000/pacientes/${pacienteId}/consultas`, {
+    const resp = await fetch(`http://${apiHost}/pacientes/${pacienteId}/consultas`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -344,7 +289,13 @@ const MapaHospital: React.FC<MapaHospitalProps> = ({
             <Popup className="font-bold">Sua localização</Popup>
           </Marker>
         )}
-  {unidadesFiltradas.map((unidade: HospitalUnit) => (
+  {unidadesFiltradas.filter(
+    (unidade: HospitalUnit) =>
+      typeof unidade.lat === 'number' &&
+      typeof unidade.lng === 'number' &&
+      !isNaN(unidade.lat) &&
+      !isNaN(unidade.lng)
+  ).map((unidade: HospitalUnit) => (
           <Marker 
             key={unidade.id} 
             position={[unidade.lat, unidade.lng]} 
@@ -361,14 +312,14 @@ const MapaHospital: React.FC<MapaHospitalProps> = ({
                 <div className="mt-1">
                   <span className="font-medium">Especialidades:</span> 
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {unidade.especialidades.slice(0, 3).map((esp: string) => (
+                    {parseEspecialidades(unidade.especialidades).slice(0, 3).map((esp: string) => (
                       <span key={esp} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                         {esp}
                       </span>
                     ))}
-                    {unidade.especialidades.length > 3 && (
+                    {parseEspecialidades(unidade.especialidades).length > 3 && (
                       <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
-                        +{unidade.especialidades.length - 3}
+                        +{parseEspecialidades(unidade.especialidades).length - 3}
                       </span>
                     )}
                   </div>
@@ -430,14 +381,14 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
   const [selectedEspecialidade, setSelectedEspecialidade] = useState<string | null>(null);
   
   const especialidadesDisponiveis = useMemo(() => {
-    const todas = unidadesHospitalares.flatMap(u => u.especialidades);
+    const todas = unidadesHospitalares.flatMap((u: HospitalUnit) => parseEspecialidades(u.especialidades));
     return Array.from(new Set(todas));
   }, [unidadesHospitalares]);
 
   const unidadesComEspecialidade = useMemo(() => {
     if (!especialidade) return [];
-    return unidadesHospitalares.filter(unidade =>
-      unidade.especialidades.some(esp =>
+    return unidadesHospitalares.filter((unidade: HospitalUnit) =>
+      parseEspecialidades(unidade.especialidades).some((esp: string) =>
         esp.toLowerCase().includes(especialidade.toLowerCase())
       )
     );
@@ -445,7 +396,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
 
   const unidadesComDistancia = useMemo(() => {
     if (!userLocation) return unidadesComEspecialidade;
-    return unidadesComEspecialidade.map(unidade => ({
+    return unidadesComEspecialidade.map((unidade: HospitalUnit) => ({
       ...unidade,
       distancia: calcularDistancia(
         userLocation[0],
@@ -453,13 +404,14 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
         unidade.lat,
         unidade.lng
       )
-    })).sort((a, b) => (a.distancia || Infinity) - (b.distancia || Infinity));
+    })).sort((a: HospitalUnit, b: HospitalUnit) => (a.distancia || Infinity) - (b.distancia || Infinity));
   }, [unidadesComEspecialidade, userLocation]);
 
   const datasDisponiveis = useMemo(() => {
     if (!unidadeSelecionada) return [];
-    const unidade = unidadesHospitalares.find(u => u.id === unidadeSelecionada);
-    return unidade ? unidade.datasDisponiveis : [];
+    const unidade = unidadesHospitalares.find((u: HospitalUnit) => u.id === unidadeSelecionada);
+    if (!unidade || !Array.isArray(unidade.datasDisponiveis)) return [];
+    return unidade.datasDisponiveis;
   }, [unidadeSelecionada, unidadesHospitalares]);
 
   // Abrir modal de descrição em dispositivos móveis
@@ -471,7 +423,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
   // Para acessar descricoesEspecialidades de forma segura
   const getDescricaoEspecialidade = (esp: string | null | undefined): string => {
     if (!esp) return "Descrição não disponível.";
-    return descricoesEspecialidades[esp as keyof typeof descricoesEspecialidades] || "Descrição não disponível.";
+    return descricoesEspecialidades[esp as keyof typeof descricoesEspecialidades] ?? "Descrição não disponível.";
   };
 
   return (
@@ -544,9 +496,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
                   </button>
                 </div>
                 <p className="text-gray-600">
-                  {selectedEspecialidade && descricoesEspecialidades[selectedEspecialidade]
-                    ? descricoesEspecialidades[selectedEspecialidade]
-                    : "Descrição não disponível."}
+                  {selectedEspecialidade ? getDescricaoEspecialidade(selectedEspecialidade) : "Descrição não disponível."}
                 </p>
                 <div className="mt-6">
                   <button
@@ -602,7 +552,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
                 <div className="text-sm text-gray-600 mt-1">{unidade.endereco}</div>
                 
                 <div className="mt-3 flex flex-wrap gap-1">
-                  {unidade.especialidades.slice(0, 3).map((esp: string) => (
+                  {parseEspecialidades(unidade.especialidades).slice(0, 3).map((esp: string) => (
                     <span 
                       key={esp} 
                       className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
@@ -656,24 +606,30 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {datasDisponiveis.map((dt: string) => (
-              <button
-                key={dt}
-                type="button"
-                className={`px-4 py-3 rounded-xl font-bold shadow transition-all duration-300 flex flex-col items-center justify-center
-                  ${data === dt 
-                    ? 'bg-moyo-primary text-white scale-105' 
-                    : 'bg-white hover:bg-moyo-primary/10 text-gray-700 border border-gray-200'}`}
-                onClick={() => setData(dt)}
-              >
-                <span className="text-lg font-bold">
-                  {new Date(dt).getDate()}
-                </span>
-                <span className="text-xs">
-                  {new Date(dt).toLocaleDateString('pt-BR', { month: 'short' })}
-                </span>
-              </button>
-            ))}
+            {datasDisponiveis.length === 0 ? (
+              <div className="col-span-4 text-center text-gray-500 py-8">
+                No momento não tem nenhum horário disponível, por favor tente em uma outra unidade.
+              </div>
+            ) : (
+              datasDisponiveis.map((dt: string) => (
+                <button
+                  key={dt}
+                  type="button"
+                  className={`px-4 py-3 rounded-xl font-bold shadow transition-all duration-300 flex flex-col items-center justify-center
+                    ${data === dt 
+                      ? 'bg-moyo-primary text-white scale-105' 
+                      : 'bg-white hover:bg-moyo-primary/10 text-gray-700 border border-gray-200'}`}
+                  onClick={() => setData(dt)}
+                >
+                  <span className="text-lg font-bold">
+                    {new Date(dt).getDate()}
+                  </span>
+                  <span className="text-xs">
+                    {new Date(dt).toLocaleDateString('pt-BR', { month: 'short' })}
+                  </span>
+                </button>
+              ))
+            )}
           </div>
           
           {erro && (
@@ -690,7 +646,7 @@ const FormularioAgendamento: React.FC<FormularioAgendamentoProps> = ({
               Voltar
             </button>
             <button
-              onClick={onSubmit}
+              type="submit"
               className="bg-moyo-primary text-white px-6 py-2 rounded-lg font-bold shadow-lg hover:bg-moyo-secondary transition transform hover:scale-105 disabled:opacity-50"
               disabled={!data || loading}
             >
@@ -1126,6 +1082,7 @@ export default function ConsultasPaciente() {
   const [mapCenter, setMapCenter] = useState<[number, number]>([-8.8383, 13.2344]);
   const [mapZoom, setMapZoom] = useState<number>(12);
   const [etapaAgendamento, setEtapaAgendamento] = useState<number>(1);
+  const [unidadesHospitalares, setUnidadesHospitalares] = useState<HospitalUnit[]>([]);
 
   // Obter consultas e localização ao carregar
   useEffect(() => {
@@ -1141,6 +1098,8 @@ export default function ConsultasPaciente() {
       getConsultasAPI(pacienteId).then(setConsultas);
     }
     obterLocalizacaoUsuario();
+    // Buscar hospitais do backend
+    getHospitaisAPI().then(setUnidadesHospitalares);
   }, []);
 
   // Obter localização do usuário
@@ -1165,13 +1124,13 @@ export default function ConsultasPaciente() {
   // Atualizar unidades filtradas quando especialidade mudar
   useEffect(() => {
     if (especialidade && userLocation) {
-      const unidadesComEspecialidade = unidadesHospitalares.filter(unidade =>
-        unidade.especialidades.some(esp =>
+      const unidadesComEspecialidade = unidadesHospitalares.filter((unidade: HospitalUnit) =>
+        parseEspecialidades(unidade.especialidades).some((esp: string) =>
           esp.toLowerCase().includes(especialidade.toLowerCase())
         )
       );
 
-      const unidadesComDistancia = unidadesComEspecialidade.map(unidade => ({
+      const unidadesComDistancia = unidadesComEspecialidade.map((unidade: HospitalUnit) => ({
         ...unidade,
         distancia: calcularDistancia(
           userLocation[0],
@@ -1179,27 +1138,27 @@ export default function ConsultasPaciente() {
           unidade.lat,
           unidade.lng
         )
-      })).sort((a, b) => (a.distancia || Infinity) - (b.distancia || Infinity));
+      })).sort((a: HospitalUnit, b: HospitalUnit) => (a.distancia || Infinity) - (b.distancia || Infinity));
 
       setUnidadesFiltradas(unidadesComDistancia);
     } else {
       setUnidadesFiltradas([]);
     }
-  }, [especialidade, userLocation]);
+  }, [especialidade, userLocation, unidadesHospitalares]);
 
   // Atualizar mapa quando unidade for selecionada
   useEffect(() => {
     if (unidadeSelecionada) {
-      const unidade = unidadesHospitalares.find(u => u.id === unidadeSelecionada);
+      const unidade = unidadesHospitalares.find((u: HospitalUnit) => u.id === unidadeSelecionada);
       if (unidade) {
         setMapCenter([unidade.lat, unidade.lng]);
         setMapZoom(16);
       }
     }
-  }, [unidadeSelecionada]);
+  }, [unidadeSelecionada, unidadesHospitalares]);
 
   // Definir unidadeSelecionadaObj corretamente antes do uso
-  const unidadeSelecionadaObj = unidadesHospitalares.find(u => u.id === unidadeSelecionada) || null;
+  const unidadeSelecionadaObj = unidadesHospitalares.find((u: HospitalUnit) => u.id === unidadeSelecionada) || null;
 
   // Manipuladores de eventos
   const handleSubmitAgendamento = (e: React.FormEvent<HTMLFormElement>) => {
@@ -1238,7 +1197,7 @@ export default function ConsultasPaciente() {
         data_hora: data ? (data.length === 10 ? data + 'T08:00:00' : data) : new Date().toISOString(),
         status: 'agendada',
         prioridade: urgencia.nivel,
-        local: unidadeSelecionada ? (unidadesHospitalares.find(u => u.id === unidadeSelecionada)?.nome || null) : null
+        local: unidadeSelecionada ? (unidadesHospitalares.find((u: HospitalUnit) => u.id === unidadeSelecionada)?.nome || null) : null
       };
       saveConsultaAPI(Number(pacienteData.id), novaConsulta).then((consultaSalva) => {
         if (consultaSalva) setConsultas([consultaSalva, ...consultas]);
@@ -1410,7 +1369,7 @@ export default function ConsultasPaciente() {
               <div className="mt-3">
                 <div className="font-medium text-blue-800">Especialidades disponíveis:</div>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {unidadeSelecionadaObj.especialidades.map(esp => (
+                  {unidadeSelecionadaObj && parseEspecialidades(unidadeSelecionadaObj.especialidades).map(esp => (
                     <span key={esp} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                       {esp}
                     </span>
