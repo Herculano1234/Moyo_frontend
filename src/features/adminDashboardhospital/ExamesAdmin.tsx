@@ -45,6 +45,7 @@ const ExamesAdmin: React.FC = () => {
   const [addExamLoading, setAddExamLoading] = useState(false);
   const [addExamMessage, setAddExamMessage] = useState("");
   const [exams, setExams] = useState<Exam[]>([]);
+  const [availableExams, setAvailableExams] = useState<any[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,20 +57,23 @@ const ExamesAdmin: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [examsResponse, doctorsResponse] = await Promise.all([
+        const [examsResponse, doctorsResponse, availableExamsResponse] = await Promise.all([
           fetch(`${process.env.REACT_APP_API_URL}/api/exames/hospital/${hospitalId}`),
-          fetch(`${process.env.REACT_APP_API_URL}/api/profissionais/hospital/${hospitalId}`)
+          fetch(`${process.env.REACT_APP_API_URL}/api/profissionais/hospital/${hospitalId}`),
+          fetch(`https://moyo-backend.vercel.app/exames_DESPONIVEIS?hospital_id=${hospitalId}`)
         ]);
 
-        if (!examsResponse.ok || !doctorsResponse.ok) {
+        if (!examsResponse.ok || !doctorsResponse.ok || !availableExamsResponse.ok) {
           throw new Error('Erro ao buscar dados');
         }
 
         const examsData = await examsResponse.json();
         const doctorsData = await doctorsResponse.json();
+        const availableExamsData = await availableExamsResponse.json();
 
         setExams(examsData);
         setDoctors(doctorsData);
+        setAvailableExams(availableExamsData);
       } catch (error) {
         console.error('Erro:', error);
         setError('Erro ao carregar dados');
@@ -85,7 +89,7 @@ const ExamesAdmin: React.FC = () => {
 
   // Calcular totais
   const totalExams = exams.length;
-  const availableExams = exams.filter(exam => exam.disponivel).length;
+  const availableExamsCount = exams.filter(exam => exam.disponivel).length;
   const unavailableExams = exams.filter(exam => !exam.disponivel).length;
 
   // Preparar dados do gráfico
@@ -239,7 +243,13 @@ const ExamesAdmin: React.FC = () => {
         
         <div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-700">Exames Disponíveis</h3>
-          <p className="text-3xl font-bold text-green-600">{availableExams}</p>
+          <p className="text-3xl font-bold text-green-600">{availableExamsCount}</p>
+          <ul className="mt-2 text-sm text-gray-700">
+            {availableExams.map((exam, idx) => (
+              <li key={idx}>{exam.nome || exam.tipo}</li>
+            ))}
+            {availableExams.length === 0 && <li>Nenhum exame disponível</li>}
+          </ul>
         </div>
         
         <div className="bg-white p-4 rounded-lg shadow">
